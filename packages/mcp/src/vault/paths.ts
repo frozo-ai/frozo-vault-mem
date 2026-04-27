@@ -25,6 +25,16 @@ const PLURAL: Record<MemoryType, string> = {
   question: "questions",
 };
 
+export const PLURAL_TO_TYPE: Record<string, MemoryType> = {
+  decisions: "decision",
+  observations: "observation",
+  todos: "todo",
+  learnings: "learning",
+  summaries: "summary",
+  entities: "entity",
+  questions: "question",
+};
+
 export interface ResolveInput {
   flag?: string;
   env?: string;

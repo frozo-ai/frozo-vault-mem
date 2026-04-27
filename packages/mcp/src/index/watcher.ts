@@ -3,7 +3,7 @@ import { basename, dirname, relative } from "node:path";
 import { watch, type FSWatcher } from "chokidar";
 import matter from "gray-matter";
 import {
-  vaultPaths, type MemoryType, type Location, MEMORY_TYPES,
+  vaultPaths, type MemoryType, type Location, MEMORY_TYPES, PLURAL_TO_TYPE,
 } from "../vault/paths.js";
 import { type IndexHandle } from "./sqlite.js";
 import { type CompiledSchemas, validateFrontmatter } from "../schema/index.js";
@@ -19,16 +19,6 @@ export interface WatcherDeps {
 export interface WatcherHandle {
   close(): Promise<void>;
 }
-
-const PLURAL_TO_TYPE: Record<string, MemoryType> = {
-  decisions: "decision",
-  observations: "observation",
-  todos: "todo",
-  learnings: "learning",
-  summaries: "summary",
-  entities: "entity",
-  questions: "question",
-};
 
 export function startWatcher(deps: WatcherDeps): WatcherHandle {
   const log = createLogger().child({ module: "watcher" });

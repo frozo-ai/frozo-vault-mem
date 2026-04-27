@@ -2,15 +2,10 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
 import {
-  vaultPaths, MEMORY_TYPES, type MemoryType, type Location,
+  vaultPaths, MEMORY_TYPES, PLURAL_TO_TYPE, type MemoryType, type Location,
 } from "../vault/paths.js";
 import { type IndexHandle, type IndexRow } from "./sqlite.js";
 import { type CompiledSchemas, validateFrontmatter } from "../schema/index.js";
-
-const PLURAL_TO_TYPE: Record<string, MemoryType> = {
-  decisions: "decision", observations: "observation", todos: "todo",
-  learnings: "learning", summaries: "summary", entities: "entity", questions: "question",
-};
 
 export interface PopulateDeps {
   vault: string;
