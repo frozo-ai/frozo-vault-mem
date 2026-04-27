@@ -3,7 +3,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import * as ulidModule from "ulid";
 const { ulid } = ulidModule as unknown as { ulid: () => string };
 import { loadSchemas } from "../schema/index.js";
-import { loadConfig } from "../config/index.js";
+import { loadConfig, resolveConfigPaths } from "../config/index.js";
 import { Auditor } from "../audit/index.js";
 import { openIndex } from "../index/sqlite.js";
 import type { SearchInput } from "../index/sqlite.js";
@@ -107,10 +107,10 @@ const TOOL_DEFS = [
 export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
   const log = createLogger().child({ module: "server" });
   const paths = vaultPaths(opts.vault);
-  const config = loadConfig(opts.vault);
+  const config = resolveConfigPaths(opts.vault, loadConfig(opts.vault));
   const schemas = loadSchemas(opts.vault);
-  const auditor = new Auditor(paths.auditFile);
-  const index = openIndex(paths.indexFile);
+  const auditor = new Auditor(config.resolvedAuditPath);
+  const index = openIndex(config.resolvedIndexPath);
 
   if (config.fts.rebuild_on_startup || index.count() === 0) {
     await populateIndex({ vault: opts.vault, index, schemas });

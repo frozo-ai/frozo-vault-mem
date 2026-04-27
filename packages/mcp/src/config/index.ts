@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isAbsolute, resolve as pathResolve } from "node:path";
 import { parse } from "yaml";
 import { Ajv } from "ajv";
 import { vaultPaths } from "../vault/paths.js";
@@ -37,6 +38,21 @@ const CONFIG_SCHEMA = {
     vault_id: { type: "string" },
   },
 } as const;
+
+export interface ResolvedConfig extends VaultConfig {
+  resolvedIndexPath: string;
+  resolvedAuditPath: string;
+}
+
+export function resolveConfigPaths(vaultRoot: string, cfg: VaultConfig): ResolvedConfig {
+  const resolveOne = (p: string): string =>
+    isAbsolute(p) ? p : pathResolve(vaultRoot, p);
+  return {
+    ...cfg,
+    resolvedIndexPath: resolveOne(cfg.fts.index_path),
+    resolvedAuditPath: resolveOne(cfg.audit.log_path),
+  };
+}
 
 export function loadConfig(vaultRoot: string): VaultConfig {
   const paths = vaultPaths(vaultRoot);

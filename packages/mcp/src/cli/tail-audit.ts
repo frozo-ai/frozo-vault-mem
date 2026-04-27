@@ -1,6 +1,6 @@
 import { createReadStream, statSync, watchFile, unwatchFile } from "node:fs";
 import { createInterface } from "node:readline";
-import { vaultPaths } from "../vault/paths.js";
+import { loadConfig, resolveConfigPaths } from "../config/index.js";
 
 export interface TailAuditOpts {
   vault: string;
@@ -11,8 +11,8 @@ export interface TailAuditOpts {
 
 export async function runTailAudit(opts: TailAuditOpts): Promise<void> {
   const out = opts.out ?? process.stdout;
-  const paths = vaultPaths(opts.vault);
-  const { auditFile } = paths;
+  const config = resolveConfigPaths(opts.vault, loadConfig(opts.vault));
+  const auditFile = config.resolvedAuditPath;
   const lines = await readLastN(auditFile, opts.n ?? 50);
   for (const ln of lines) out.write(formatLine(ln) + "\n");
   if (!opts.follow) return;

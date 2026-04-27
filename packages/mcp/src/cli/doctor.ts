@@ -1,6 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { vaultPaths, MEMORY_TYPES } from "../vault/paths.js";
-import { loadConfig } from "../config/index.js";
+import { loadConfig, resolveConfigPaths } from "../config/index.js";
 import { loadSchemas } from "../schema/index.js";
 import { openIndex } from "../index/sqlite.js";
 
@@ -33,7 +33,14 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
   checks.push({ name: "schemas", pass: schemasOk });
 
   let configOk = true;
-  try { loadConfig(opts.vault); } catch (e) {
+  let resolvedIndexPath = paths.indexFile;
+  let resolvedAuditPath = paths.auditFile;
+  try {
+    const cfg = loadConfig(opts.vault);
+    const resolved = resolveConfigPaths(opts.vault, cfg);
+    resolvedIndexPath = resolved.resolvedIndexPath;
+    resolvedAuditPath = resolved.resolvedAuditPath;
+  } catch (e) {
     configOk = false;
     checks.push({ name: "config", pass: false, detail: (e as Error).message });
   }
@@ -41,7 +48,7 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
 
   let indexOk = true;
   try {
-    const idx = openIndex(paths.indexFile);
+    const idx = openIndex(resolvedIndexPath);
     idx.search({ query: "x", limit: 1 });
     idx.close();
   } catch { indexOk = false; }
@@ -51,7 +58,7 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
   let rowCountOk = true;
   let rowCountDetail: string | undefined;
   try {
-    const idx = openIndex(paths.indexFile);
+    const idx = openIndex(resolvedIndexPath);
     const indexCount = idx.count();
     let diskCount = 0;
     for (const t of MEMORY_TYPES) {
@@ -82,10 +89,10 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
   let auditDetail: string | undefined;
   try {
     const { accessSync, constants } = await import("node:fs");
-    accessSync(paths.auditFile, constants.W_OK);
+    accessSync(resolvedAuditPath, constants.W_OK);
     auditOk = true;
   } catch (e) {
-    auditDetail = `${paths.auditFile}: ${(e as Error).message}`;
+    auditDetail = `${resolvedAuditPath}: ${(e as Error).message}`;
   }
   checks.push({ name: "audit_log", pass: auditOk, detail: auditDetail });
 
