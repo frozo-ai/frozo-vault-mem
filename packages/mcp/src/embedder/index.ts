@@ -14,11 +14,18 @@ export function createTransformersEmbedder(): Embedder {
   let pipelinePromise: Promise<Pipeline> | null = null;
 
   const getPipeline = (): Promise<Pipeline> => {
-    pipelinePromise ??= pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2",
-      { quantized: true },
-    ) as unknown as Promise<Pipeline>;
+    if (pipelinePromise === null) {
+      const created = pipeline(
+        "feature-extraction",
+        "Xenova/all-MiniLM-L6-v2",
+        { quantized: true },
+      ) as unknown as Promise<Pipeline>;
+      pipelinePromise = created.catch((err) => {
+        // Reset so a future call can retry the load
+        pipelinePromise = null;
+        throw err;
+      });
+    }
     return pipelinePromise;
   };
 
