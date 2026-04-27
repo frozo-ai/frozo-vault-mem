@@ -1,8 +1,10 @@
 import { existsSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { vaultPaths, MEMORY_TYPES } from "../vault/paths.js";
 import { loadConfig, resolveConfigPaths } from "../config/index.js";
 import { loadSchemas } from "../schema/index.js";
 import { openIndex } from "../index/sqlite.js";
+import { openLance } from "../index/lance.js";
 
 export interface DoctorOpts { vault: string }
 
@@ -95,6 +97,42 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
     auditDetail = `${resolvedAuditPath}: ${(e as Error).message}`;
   }
   checks.push({ name: "audit_log", pass: auditOk, detail: auditDetail });
+
+  // Check embeddings index (Lance). Missing dir = 0 rows = pass (not yet populated).
+  let lanceCount = 0;
+  let embeddingsOk = true;
+  let embeddingsDetail: string | undefined;
+  try {
+    const lanceDir = join(paths.systemDir, "embeddings.lance");
+    if (existsSync(lanceDir)) {
+      const lance = await openLance(lanceDir);
+      lanceCount = await lance.count();
+      await lance.close();
+    }
+    // If dir doesn't exist, lanceCount stays 0; that's fine (pass with 0 count).
+  } catch (e) {
+    embeddingsOk = false;
+    embeddingsDetail = (e as Error).message;
+  }
+  checks.push({ name: "embeddings_index", pass: embeddingsOk, detail: embeddingsDetail });
+
+  // Check count match between FTS index and Lance index.
+  // Skipped (passes) when either count is 0 — handles freshly-init or not-yet-populated vaults.
+  let countMatchOk = true;
+  let countMatchDetail: string | undefined;
+  try {
+    const idx2 = openIndex(resolvedIndexPath);
+    const ftsCount = idx2.count();
+    idx2.close();
+    if (ftsCount > 0 && lanceCount > 0 && ftsCount !== lanceCount) {
+      countMatchOk = false;
+      countMatchDetail = `FTS has ${ftsCount} rows, Lance has ${lanceCount} rows (run 'reindex' to reconcile)`;
+    }
+  } catch (e) {
+    countMatchOk = false;
+    countMatchDetail = (e as Error).message;
+  }
+  checks.push({ name: "embeddings_count_match", pass: countMatchOk, detail: countMatchDetail });
 
   return { ok: checks.every((c) => c.pass), checks };
 }
