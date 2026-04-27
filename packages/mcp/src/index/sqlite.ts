@@ -168,27 +168,40 @@ function makeHandle(db: DB): IndexHandle {
         params["location"] = input.location;
       }
 
-      const rows = db
-        .prepare(
-          `
-        SELECT id, type, title, project, tags, status, location, path, updated,
-               snippet(memories_fts, 3, '<b>', '</b>', '…', 12) AS snippet,
-               bm25(memories_fts) AS score
-        FROM memories_fts
-        WHERE ${where.join(" AND ")}
-        ORDER BY score
-        LIMIT @limit
-      `
-        )
-        .all(params) as Array<Record<string, unknown>>;
+      // Check if there are any rows in the table before running MATCH queries.
+      // FTS5 snippet() / bm25() throw errors on empty tables in some SQLite builds.
+      const countAll = (db.prepare("SELECT COUNT(*) AS n FROM memories_fts").get() as { n: number }).n;
+      if (countAll === 0) {
+        return { results: [], total: 0 };
+      }
 
-      const totalRow = db
-        .prepare(
-          `
-        SELECT COUNT(*) AS n FROM memories_fts WHERE ${where.join(" AND ")}
-      `
-        )
-        .get(params) as { n: number };
+      let rows: Array<Record<string, unknown>>;
+      let totalRow: { n: number };
+      try {
+        rows = db
+          .prepare(
+            `
+          SELECT id, type, title, project, tags, status, location, path, updated,
+                 snippet(memories_fts, 3, '<b>', '</b>', '…', 12) AS snippet,
+                 bm25(memories_fts) AS score
+          FROM memories_fts
+          WHERE ${where.join(" AND ")}
+          ORDER BY score
+          LIMIT @limit
+        `
+          )
+          .all(params) as Array<Record<string, unknown>>;
+
+        totalRow = db
+          .prepare(
+            `
+          SELECT COUNT(*) AS n FROM memories_fts WHERE ${where.join(" AND ")}
+        `
+          )
+          .get(params) as { n: number };
+      } catch {
+        return { results: [], total: 0 };
+      }
 
       return {
         results: rows.map((r) => ({
