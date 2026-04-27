@@ -1077,10 +1077,14 @@ describe("generateId", () => {
     expect(suffix).toMatch(/^[0-9a-f]{6}$/);
   });
 
-  it("produces unique IDs over 10k generations", () => {
+  // 6 hex chars = 24 bits = 16M possibilities, so the birthday bound at k=30
+  // is ~0.003% — comfortably below CI-flakiness thresholds. Larger iteration
+  // counts hit the birthday paradox and are not appropriate without a wider
+  // suffix or a disk-level dedup pass (the latter happens in the write tool).
+  it("produces unique IDs over 30 generations within one ms tick", () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 10_000; i++) seen.add(generateId());
-    expect(seen.size).toBe(10_000);
+    for (let i = 0; i < 30; i++) seen.add(generateId());
+    expect(seen.size).toBe(30);
   });
 });
 
