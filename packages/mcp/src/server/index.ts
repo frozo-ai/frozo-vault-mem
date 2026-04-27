@@ -6,6 +6,7 @@ import { loadSchemas } from "../schema/index.js";
 import { loadConfig } from "../config/index.js";
 import { Auditor } from "../audit/index.js";
 import { openIndex } from "../index/sqlite.js";
+import type { SearchInput } from "../index/sqlite.js";
 import { populateIndex } from "../index/populate.js";
 import { startWatcher, type WatcherHandle } from "../index/watcher.js";
 import { vaultPaths } from "../vault/paths.js";
@@ -15,6 +16,9 @@ import {
   createSearchTool,
   createPromoteTool,
 } from "../tools/index.js";
+import type { WriteToolInput } from "../tools/write.js";
+import type { ReadToolInput } from "../tools/read.js";
+import type { PromoteToolInput } from "../tools/promote.js";
 import { ToolError } from "../errors.js";
 import { createLogger } from "../log.js";
 
@@ -167,16 +171,16 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
       const a = (args ?? {}) as Record<string, unknown>;
       switch (name) {
         case "memory.write":
-          out = await writeTool.handle(a as never);
+          out = await writeTool.handle(a as unknown as WriteToolInput);
           break;
         case "memory.read":
-          out = await readTool.handle(a as never);
+          out = await readTool.handle(a as unknown as ReadToolInput);
           break;
         case "memory.search":
-          out = await searchTool.handle(a as never);
+          out = await searchTool.handle(a as unknown as SearchInput);
           break;
         case "memory.promote":
-          out = await promoteTool.handle(a as never);
+          out = await promoteTool.handle(a as unknown as PromoteToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);
