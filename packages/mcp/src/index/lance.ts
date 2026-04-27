@@ -134,65 +134,81 @@ export async function openLance(dir: string): Promise<LanceHandle> {
     await table.delete("id = '__seed__'");
   }
 
+  async function upsert(row: LanceRow): Promise<void> {
+    // Lance has no native upsert; emulate via delete-then-add.
+    await table.delete(`id = '${escape(row.id)}'`);
+    await table.add([rowToInput(row)]);
+  }
+
+  async function deleteRow(id: string): Promise<void> {
+    await table.delete(`id = '${escape(id)}'`);
+  }
+
+  async function getById(id: string): Promise<LanceRow | null> {
+    const rows = await table
+      .query()
+      .where(`id = '${escape(id)}'`)
+      .limit(1)
+      .toArray();
+    return rowFromDb(rows[0]);
+  }
+
+  async function search(qvec: Float32Array, filter: LanceFilter, limit: number): Promise<{ results: LanceSearchResult[]; total: number }> {
+    const where = buildWhere(filter);
+    let q = (table.search(Array.from(qvec)) as ReturnType<Table["search"]>).limit(limit);
+    if (where) q = q.where(where);
+    const results = (await q.toArray()) as Array<Record<string, unknown>>;
+    const mapped: LanceSearchResult[] = results.map((r) => ({
+      id: String(r["id"]),
+      type: r["type"] as MemoryType,
+      title: String(r["title"]),
+      project: r["project"] != null ? String(r["project"]) : null,
+      tags: Array.isArray(r["tags"]) ? (r["tags"] as unknown[]).map((x) => String(x)) : [],
+      status: r["status"] as LanceSearchResult["status"],
+      location: r["location"] as Location,
+      path: String(r["path"]),
+      updated: String(r["updated"]),
+      score: Number(r["_distance"] ?? 0),
+    }));
+    // Total: reuse count of filtered rows
+    const totalQ = await table
+      .query()
+      .where(where ?? "true")
+      .toArray();
+    return { results: mapped, total: totalQ.length };
+  }
+
+  async function rebuild(rows: Iterable<LanceRow>): Promise<void> {
+    // Drop all, re-add. Schema preserved via the existing table.
+    await table.delete("true");
+    const arr = Array.from(rows).map(rowToInput);
+    if (arr.length > 0) await table.add(arr);
+  }
+
+  async function updateMetadata(id: string, fields: Partial<Pick<LanceRow, "location" | "path" | "status" | "updated">>): Promise<void> {
+    // No partial-update API; emulate via getById + upsert with same vector.
+    const existing = await getById(id);
+    if (!existing) return;
+    const updated: LanceRow = { ...existing, ...fields };
+    await upsert(updated);
+  }
+
+  async function count(): Promise<number> {
+    return table.countRows();
+  }
+
+  async function close(): Promise<void> {
+    // Connection is closed by GC; nothing to do explicitly in current API.
+  }
+
   return {
-    async upsert(row) {
-      // Lance has no native upsert; emulate via delete-then-add.
-      await table.delete(`id = '${escape(row.id)}'`);
-      await table.add([rowToInput(row)]);
-    },
-    async delete(id) {
-      await table.delete(`id = '${escape(id)}'`);
-    },
-    async getById(id) {
-      const rows = await table
-        .query()
-        .where(`id = '${escape(id)}'`)
-        .limit(1)
-        .toArray();
-      return rowFromDb(rows[0]);
-    },
-    async search(qvec, filter, limit) {
-      const where = buildWhere(filter);
-      let q = (table.search(Array.from(qvec)) as ReturnType<Table["search"]>).limit(limit);
-      if (where) q = q.where(where);
-      const results = (await q.toArray()) as Array<Record<string, unknown>>;
-      const mapped: LanceSearchResult[] = results.map((r) => ({
-        id: String(r["id"]),
-        type: r["type"] as MemoryType,
-        title: String(r["title"]),
-        project: r["project"] != null ? String(r["project"]) : null,
-        tags: Array.isArray(r["tags"]) ? (r["tags"] as unknown[]).map((x) => String(x)) : [],
-        status: r["status"] as LanceSearchResult["status"],
-        location: r["location"] as Location,
-        path: String(r["path"]),
-        updated: String(r["updated"]),
-        score: Number(r["_distance"] ?? 0),
-      }));
-      // Total: reuse count of filtered rows
-      const totalQ = await table
-        .query()
-        .where(where ?? "true")
-        .toArray();
-      return { results: mapped, total: totalQ.length };
-    },
-    async rebuild(rows) {
-      // Drop all, re-add. Schema preserved via the existing table.
-      await table.delete("true");
-      const arr = Array.from(rows).map(rowToInput);
-      if (arr.length > 0) await table.add(arr);
-    },
-    async updateMetadata(id, fields) {
-      // No partial-update API; emulate via getById + upsert with same vector.
-      const existing = await this.getById(id);
-      if (!existing) return;
-      const updated: LanceRow = { ...existing, ...fields };
-      await this.upsert(updated);
-    },
-    async count() {
-      return table.countRows();
-    },
-    async close() {
-      // Connection is closed by GC; nothing to do explicitly in current API.
-    },
+    upsert,
+    delete: deleteRow,
+    getById,
+    search,
+    rebuild,
+    updateMetadata,
+    count,
+    close,
   };
 }
