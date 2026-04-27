@@ -8,6 +8,7 @@ import {
   vaultPaths, type MemoryType, MEMORY_TYPES,
 } from "../vault/paths.js";
 import { withLock } from "../vault/lock.js";
+import type { LanceHandle } from "../index/lance.js";
 
 export interface PromoteToolInput {
   id: string;
@@ -25,6 +26,7 @@ export interface PromoteToolDeps {
   schemas: CompiledSchemas;
   auditor: Auditor;
   index: IndexHandle;
+  lance: LanceHandle;
   agent?: string;
   session?: string | null;
 }
@@ -87,6 +89,13 @@ export function createPromoteTool(deps: PromoteToolDeps) {
       }
       const idxRow = deps.index.getById(input.id);
       if (idxRow) deps.index.upsert({ ...idxRow, location: "memory", path: to });
+
+      // In-place Lance metadata update (avoids re-embed)
+      try {
+        await deps.lance.updateMetadata(input.id, { location: "memory", path: to });
+      } catch {
+        // The watcher will reconcile on the rename event.
+      }
 
       deps.auditor.write({
         op: "promote",
