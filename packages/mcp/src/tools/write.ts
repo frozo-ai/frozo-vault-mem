@@ -8,6 +8,9 @@ import { type CompiledSchemas, validateFrontmatter } from "../schema/index.js";
 import { Auditor } from "../audit/index.js";
 import { type IndexHandle } from "../index/sqlite.js";
 import { ToolError } from "../errors.js";
+import type { Embedder } from "../embedder/index.js";
+import { EMBED_MODEL_ID } from "../embedder/index.js";
+import type { LanceHandle } from "../index/lance.js";
 
 export interface WriteToolInput {
   type: MemoryType;
@@ -30,6 +33,8 @@ export interface WriteToolDeps {
   index: IndexHandle;
   defaultAgent: string;
   defaultSession?: string | null;
+  embedder: Embedder;
+  lance: LanceHandle;
 }
 
 const DEFAULT_TTL: Record<MemoryType, number | null> = {
@@ -112,7 +117,32 @@ export function createWriteTool(deps: WriteToolDeps) {
         updated: now,
       });
 
-      return { id, path: targetPath, warnings: [] };
+      const warnings: string[] = [];
+      try {
+        const tagsArr = (fm["tags"] as string[] | undefined) ?? [];
+        const embedText = [String(fm["title"]), tagsArr.join(", "), input.content]
+          .filter((s) => s && s.length > 0)
+          .join("\n");
+        const vector = await deps.embedder.embed(embedText);
+        await deps.lance.upsert({
+          id,
+          vector,
+          type: input.type,
+          title: String(fm["title"]),
+          project: (fm["project"] as string | null | undefined) ?? null,
+          tags: tagsArr,
+          status: "active",
+          location: "inbox",
+          path: targetPath,
+          updated: String(fm["updated"]),
+          schema_version: "0.1",
+          embed_model: EMBED_MODEL_ID,
+        });
+      } catch (_err) {
+        warnings.push("semantic_index_lagged");
+      }
+
+      return { id, path: targetPath, warnings };
     },
   };
 }
