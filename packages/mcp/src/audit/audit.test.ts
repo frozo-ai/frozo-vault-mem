@@ -29,11 +29,27 @@ describe("Auditor", () => {
 
   it("hashes search queries instead of storing them raw", () => {
     const a = new Auditor(logPath);
-    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4 });
+    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4, mode: "fts" });
     const line = JSON.parse(readFileSync(logPath, "utf8").trim());
     expect(line.query).toBeUndefined();
     expect(line.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(line.result_count).toBe(4);
+  });
+
+  it("records search mode in audit entries", () => {
+    const a = new Auditor(logPath);
+    a.write({
+      op: "search",
+      agent: "claude-code",
+      session: "01H",
+      query: "supabase",
+      result_count: 1,
+      mode: "hybrid",
+    });
+    const line = JSON.parse(readFileSync(logPath, "utf8").trim());
+    expect(line.mode).toBe("hybrid");
+    expect(line.query).toBeUndefined();          // still hashed, not raw
+    expect(line.query_hash).toMatch(/^sha256:/);
   });
 
   it("hashes context query when present, omits when absent", () => {

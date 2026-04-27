@@ -24,6 +24,7 @@ export interface AuditSearchOp {
   session: string | null;
   query: string;
   result_count: number;
+  mode: "fts" | "semantic" | "hybrid";
 }
 
 export interface AuditPromoteOp {

@@ -130,6 +130,7 @@ export function createSearchTool(deps: SearchToolDeps) {
         session: deps.session ?? null,
         query: input.query,
         result_count: results.length,
+        mode,
       });
 
       return { results, total };
