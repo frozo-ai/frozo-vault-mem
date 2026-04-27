@@ -4,9 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
-This repo currently contains **only `vault-mem-prd.md`** — there is no code, no build system, no tests yet. Phase 0 (folder scaffolding + JSON schemas) has not started. Treat the PRD as the contract: read it before proposing any structural decisions.
+Phase 0 (vault scaffolding) and Phase 1 (MCP server v0.1) are implemented on `feat/phase-1-mcp` and ready to merge to main. The repo holds:
 
-When code lands, this file should be updated with the actual build/test/run commands for each component.
+- `vault-template/` — bundled scaffolding the `init` CLI copies to a working vault
+- `packages/mcp/` — the `@vault-mem/mcp` workspace package (Node 20 + TypeScript ESM)
+- `vault-mem-prd.md` — original PRD (treat as contract)
+- `docs/superpowers/specs/` and `docs/superpowers/plans/` — design and implementation history
+
+See "Running and developing" below for build/test/run commands.
 
 ## What Vault-Mem is
 
