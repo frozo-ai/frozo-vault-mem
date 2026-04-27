@@ -44,8 +44,24 @@ export interface AuditFailedOp {
   message: string;
 }
 
+export interface AuditContextOp {
+  op: "context";
+  agent: string;
+  session: string | null;
+  project: string;
+  max_tokens: number;
+  query?: string;
+  result_count: number;
+  total_tokens: number;
+}
+
 export type AuditEntry =
-  | AuditWriteOp | AuditReadOp | AuditSearchOp | AuditPromoteOp | AuditFailedOp;
+  | AuditWriteOp
+  | AuditReadOp
+  | AuditSearchOp
+  | AuditPromoteOp
+  | AuditContextOp
+  | AuditFailedOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}
@@ -59,6 +75,14 @@ export class Auditor {
 function serialize(entry: AuditEntry): string {
   const base = { ts: new Date().toISOString(), v: 1 };
   if (entry.op === "search") {
+    const { query, ...rest } = entry;
+    return JSON.stringify({
+      ...base,
+      ...rest,
+      query_hash: "sha256:" + createHash("sha256").update(query).digest("hex"),
+    });
+  }
+  if (entry.op === "context" && entry.query !== undefined) {
     const { query, ...rest } = entry;
     return JSON.stringify({
       ...base,
