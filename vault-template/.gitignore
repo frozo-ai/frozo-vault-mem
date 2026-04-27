@@ -2,3 +2,6 @@
 _system/index.sqlite
 _system/index.sqlite-wal
 _system/index.sqlite-shm
+
+# Embedding index — rebuildable from .md sources
+_system/embeddings.lance/
