@@ -18,6 +18,11 @@ describe("doctor", () => {
     const result = await runDoctor({ vault: target });
     expect(result.ok).toBe(true);
     expect(result.checks.every((c) => c.pass)).toBe(true);
+    // Verify the 9 check names are all present
+    const checkNames = result.checks.map((c) => c.name);
+    expect(checkNames).toContain("embeddings_index");
+    expect(checkNames).toContain("embeddings_count_match");
+    expect(result.checks).toHaveLength(9);
   });
 
   it("fails when config.yaml is missing", async () => {

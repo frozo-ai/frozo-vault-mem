@@ -61,4 +61,16 @@ describe("openIndex (in-memory)", () => {
     idx.delete("mem_2026-04-27_aaaaaa");
     expect(idx.getById("mem_2026-04-27_aaaaaa")).toBeNull();
   });
+
+  it("list returns all rows matching filters without MATCH", () => {
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "kincare" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "kincare" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "frozo" }));
+
+    expect(idx.list({}).length).toBe(3);
+    expect(idx.list({ type: "decision" }).length).toBe(2);
+    expect(idx.list({ project: "kincare" }).length).toBe(2);
+    expect(idx.list({ type: "decision", project: "kincare" }).length).toBe(1);
+  });
 });

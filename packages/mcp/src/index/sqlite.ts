@@ -47,6 +47,12 @@ export interface IndexHandle {
   delete(id: string): void;
   getById(id: string): IndexRow | null;
   search(input: SearchInput): { results: SearchResult[]; total: number };
+  list(filter: {
+    type?: MemoryType | MemoryType[];
+    project?: string;
+    status?: "active" | "archived" | "superseded";
+    location?: Location | "any";
+  }): IndexRow[];
   rebuild(rows: Iterable<IndexRow>): void;
   count(): number;
   close(): void;
@@ -218,6 +224,27 @@ function makeHandle(db: DB): IndexHandle {
         })),
         total: totalRow.n,
       };
+    },
+    list(filter) {
+      const where: string[] = [];
+      const params: Record<string, unknown> = {};
+      const types = filter.type ? (Array.isArray(filter.type) ? filter.type : [filter.type]) : null;
+      if (types) {
+        where.push(`type IN (${types.map((_, i) => `@t${i}`).join(",")})`);
+        types.forEach((t, i) => { params[`t${i}`] = t; });
+      }
+      if (filter.project) { where.push("project = @project"); params["project"] = filter.project; }
+      if (filter.status) { where.push("status = @status"); params["status"] = filter.status; }
+      if (filter.location && filter.location !== "any") {
+        where.push("location = @location");
+        params["location"] = filter.location;
+      }
+      const whereSql = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
+      const rows = db.prepare(`
+        SELECT id, type, title, body, tags, project, status, location, path, updated
+        FROM memories_fts ${whereSql}
+      `).all(params) as Array<Record<string, unknown>>;
+      return rows.map((r) => rowFromDb(r)!);
     },
     rebuild(rows) {
       const tx = db.transaction((iter: IndexRow[]) => {

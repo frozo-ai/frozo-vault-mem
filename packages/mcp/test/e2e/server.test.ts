@@ -18,7 +18,7 @@ describe("MCP server (in-memory transport)", () => {
     return () => v.cleanup();
   });
 
-  it("happy-path round-trip: write, read, search, promote", async () => {
+  it("happy-path round-trip: write, read, search, promote, context", { timeout: 30_000 }, async () => {
     const built = await buildServer({ vault: v.root });
     const [a, b] = InMemoryTransport.createLinkedPair();
     await built.server.connect(a);
@@ -57,6 +57,14 @@ describe("MCP server (in-memory transport)", () => {
     });
     const promoteOut = JSON.parse((promote.content as Array<{ text: string }>)[0]!.text);
     expect(promoteOut.to).toContain("/memory/decisions/");
+
+    const ctx = await client.callTool({
+      name: "memory.context",
+      arguments: { project: "demo", max_tokens: 4000 },
+    });
+    const ctxOut = JSON.parse((ctx.content as Array<{ text: string }>)[0]!.text);
+    expect(Array.isArray(ctxOut.items)).toBe(true);
+    expect(ctxOut.total_tokens).toBeGreaterThanOrEqual(0);
 
     await client.close();
     await built.shutdown();

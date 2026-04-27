@@ -1,11 +1,15 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import matter from "gray-matter";
 import { makeTmpVault, type TmpVault } from "../../test/helpers/tmpVault.js";
 import { openIndex } from "./sqlite.js";
 import { populateIndex } from "./populate.js";
 import { loadSchemas } from "../schema/index.js";
 import { vaultPaths, MEMORY_TYPES } from "../vault/paths.js";
+import { openLance } from "./lance.js";
+import { createMockEmbedder } from "../embedder/mock.js";
 
 const fm = (id: string, over: Record<string, unknown> = {}) => ({
   id, type: "decision", title: "Pop test " + id, agent: "human", session: null,
@@ -32,17 +36,29 @@ describe("populateIndex", () => {
     const paths = vaultPaths(v.root);
     const schemas = loadSchemas(v.root);
     const idx = openIndex(":memory:");
+    const lanceDir = mkdtempSync(join(tmpdir(), "vault-mem-populate-lance-"));
+    const lance = await openLance(lanceDir);
+    const embedder = createMockEmbedder();
 
     writeFileSync(paths.memoryFile("decision", "mem_2026-04-27_aaaaaa", "memory"),
       matter.stringify("body a", fm("mem_2026-04-27_aaaaaa")));
     writeFileSync(paths.memoryFile("decision", "mem_2026-04-27_bbbbbb", "inbox"),
       matter.stringify("body b", fm("mem_2026-04-27_bbbbbb")));
 
-    await populateIndex({ vault: v.root, index: idx, schemas });
+    await populateIndex({ vault: v.root, index: idx, schemas, embedder, lance });
 
     expect(idx.getById("mem_2026-04-27_aaaaaa")?.location).toBe("memory");
     expect(idx.getById("mem_2026-04-27_bbbbbb")?.location).toBe("inbox");
     // sample-decision.md should also have been indexed
     expect(idx.getById("mem_2026-04-27_000001")?.title).toBe("Use Supabase for KinCare auth");
+
+    // Lance row count should match FTS count
+    expect(await lance.count()).toBe(idx.count());
+    const lanceRow = await lance.getById("mem_2026-04-27_aaaaaa");
+    expect(lanceRow?.location).toBe("memory");
+    expect(lanceRow?.vector?.length).toBe(384);
+
+    await lance.close();
+    rmSync(lanceDir, { recursive: true, force: true });
   });
 });

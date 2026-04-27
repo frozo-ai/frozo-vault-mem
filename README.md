@@ -36,7 +36,13 @@ Add to `~/.config/claude-code/mcp.json`:
 
 ## Tools
 
-- `memory.read` · `memory.write` · `memory.search` · `memory.promote`
+| Tool | Description |
+|------|-------------|
+| `memory.write` | Create a new memory in the vault inbox. |
+| `memory.read` | Read a memory by id. |
+| `memory.search` | Search the vault. Accepts `mode: "fts" \| "semantic" \| "hybrid"` (default `"hybrid"`, RRF-merged). Semantic and hybrid modes use the local MiniLM embedding index. |
+| `memory.promote` | Move a memory from inbox to memory/. |
+| `memory.context` | Get curated context for a project. Summaries lead; when a `query` is supplied, results are semantic-led. Accepts `max_tokens` (100–16000, default 4000), `query` (optional), and `include_inbox` (default false). |
 
 ## CLI
 

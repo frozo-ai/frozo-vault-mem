@@ -29,10 +29,58 @@ describe("Auditor", () => {
 
   it("hashes search queries instead of storing them raw", () => {
     const a = new Auditor(logPath);
-    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4 });
+    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4, mode: "fts" });
     const line = JSON.parse(readFileSync(logPath, "utf8").trim());
     expect(line.query).toBeUndefined();
     expect(line.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(line.result_count).toBe(4);
+  });
+
+  it("records search mode in audit entries", () => {
+    const a = new Auditor(logPath);
+    a.write({
+      op: "search",
+      agent: "claude-code",
+      session: "01H",
+      query: "supabase",
+      result_count: 1,
+      mode: "hybrid",
+    });
+    const line = JSON.parse(readFileSync(logPath, "utf8").trim());
+    expect(line.mode).toBe("hybrid");
+    expect(line.query).toBeUndefined();          // still hashed, not raw
+    expect(line.query_hash).toMatch(/^sha256:/);
+  });
+
+  it("hashes context query when present, omits when absent", () => {
+    const a = new Auditor(logPath);
+    a.write({
+      op: "context",
+      agent: "claude-code",
+      session: "01H",
+      project: "kincare",
+      max_tokens: 4000,
+      query: "auth decisions",
+      result_count: 3,
+      total_tokens: 480,
+    });
+    a.write({
+      op: "context",
+      agent: "claude-code",
+      session: "01H",
+      project: "kincare",
+      max_tokens: 4000,
+      result_count: 5,
+      total_tokens: 1200,
+    });
+    const lines = readFileSync(logPath, "utf8").trim().split("\n");
+    const withQuery = JSON.parse(lines[0]!);
+    const noQuery = JSON.parse(lines[1]!);
+    expect(withQuery.query).toBeUndefined();
+    expect(withQuery.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(withQuery.project).toBe("kincare");
+    expect(noQuery.query).toBeUndefined();
+    expect(noQuery.query_hash).toBeUndefined();
+    expect(noQuery.total_tokens).toBe(1200);
   });
 });

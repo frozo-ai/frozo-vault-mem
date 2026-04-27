@@ -1,10 +1,15 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { makeTmpVault, type TmpVault } from "../helpers/tmpVault.js";
 import { createWriteTool } from "../../src/tools/write.js";
 import { createReadTool } from "../../src/tools/read.js";
 import { loadSchemas } from "../../src/schema/index.js";
 import { Auditor } from "../../src/audit/index.js";
 import { openIndex } from "../../src/index/sqlite.js";
+import { openLance } from "../../src/index/lance.js";
+import { createMockEmbedder } from "../../src/embedder/mock.js";
 import { vaultPaths } from "../../src/vault/paths.js";
 
 describe("memory.read", () => {
@@ -19,8 +24,11 @@ describe("memory.read", () => {
     const schemas = loadSchemas(v.root);
     const idx = openIndex(":memory:");
     const auditor = new Auditor(paths.auditFile);
+    const lanceDir = mkdtempSync(join(tmpdir(), "vault-mem-read-lance-"));
+    const lance = await openLance(lanceDir);
+    const embedder = createMockEmbedder();
 
-    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human" });
+    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human", lance, embedder });
     const read = createReadTool({ vault: v.root, schemas, auditor, index: idx });
 
     const written = await write.handle({
@@ -36,6 +44,9 @@ describe("memory.read", () => {
     expect(result.frontmatter.title).toBe("Read test");
     expect(result.content.trim()).toBe("body text here");
     expect(result.location).toBe("inbox");
+
+    await lance.close();
+    rmSync(lanceDir, { recursive: true, force: true });
   });
 
   it("throws not_found for an unknown id", async () => {

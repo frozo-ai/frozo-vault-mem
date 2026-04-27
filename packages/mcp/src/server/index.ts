@@ -2,6 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import * as ulidModule from "ulid";
 const { ulid } = ulidModule as unknown as { ulid: () => string };
+import { join } from "node:path";
 import { loadSchemas } from "../schema/index.js";
 import { loadConfig, resolveConfigPaths } from "../config/index.js";
 import { Auditor } from "../audit/index.js";
@@ -9,16 +10,20 @@ import { openIndex } from "../index/sqlite.js";
 import type { SearchInput } from "../index/sqlite.js";
 import { populateIndex } from "../index/populate.js";
 import { startWatcher, type WatcherHandle } from "../index/watcher.js";
+import { openLance, type LanceHandle } from "../index/lance.js";
+import { createTransformersEmbedder, type Embedder } from "../embedder/index.js";
 import { vaultPaths } from "../vault/paths.js";
 import {
   createReadTool,
   createWriteTool,
   createSearchTool,
   createPromoteTool,
+  createContextTool,
 } from "../tools/index.js";
 import type { WriteToolInput } from "../tools/write.js";
 import type { ReadToolInput } from "../tools/read.js";
 import type { PromoteToolInput } from "../tools/promote.js";
+import type { ContextToolInput } from "../tools/context.js";
 import { ToolError } from "../errors.js";
 import { createLogger } from "../log.js";
 
@@ -90,6 +95,7 @@ const TOOL_DEFS = [
           enum: ["inbox", "memory", "archive", "any"],
         },
         limit: { type: "integer", minimum: 1, maximum: 100 },
+        mode: { type: "string", enum: ["fts", "semantic", "hybrid"] },
       },
     },
   },
@@ -102,6 +108,20 @@ const TOOL_DEFS = [
       properties: { id: { type: "string" }, reason: { type: "string" } },
     },
   },
+  {
+    name: "memory.context",
+    description: "Get curated context for a project (summaries lead; semantic-led when query supplied).",
+    inputSchema: {
+      type: "object",
+      required: ["project"],
+      properties: {
+        project: { type: "string" },
+        max_tokens: { type: "integer", minimum: 100, maximum: 16000 },
+        query: { type: "string" },
+        include_inbox: { type: "boolean" },
+      },
+    },
+  },
 ] as const;
 
 export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
@@ -111,15 +131,20 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
   const schemas = loadSchemas(opts.vault);
   const auditor = new Auditor(config.resolvedAuditPath);
   const index = openIndex(config.resolvedIndexPath);
+  const lanceDir = join(paths.systemDir, "embeddings.lance");
+  const lance: LanceHandle = await openLance(lanceDir);
+  const embedder: Embedder = createTransformersEmbedder();
 
   if (config.fts.rebuild_on_startup || index.count() === 0) {
-    await populateIndex({ vault: opts.vault, index, schemas });
+    await populateIndex({ vault: opts.vault, index, schemas, embedder, lance });
   }
 
   const watcher: WatcherHandle = startWatcher({
     vault: opts.vault,
     index,
     schemas,
+    embedder,
+    lance,
   });
   const session = ulid();
   const sessionAgent = config.default_agent;
@@ -131,6 +156,8 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     index,
     defaultAgent: sessionAgent,
     defaultSession: session,
+    embedder,
+    lance,
   });
   const readTool = createReadTool({
     vault: opts.vault,
@@ -145,12 +172,24 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     index,
     agent: sessionAgent,
     session,
+    lance,
+    embedder,
   });
   const promoteTool = createPromoteTool({
     vault: opts.vault,
     schemas,
     auditor,
     index,
+    agent: sessionAgent,
+    session,
+    lance,
+  });
+  const contextTool = createContextTool({
+    vault: opts.vault,
+    auditor,
+    index,
+    lance,
+    embedder,
     agent: sessionAgent,
     session,
   });
@@ -181,6 +220,9 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
           break;
         case "memory.promote":
           out = await promoteTool.handle(a as unknown as PromoteToolInput);
+          break;
+        case "memory.context":
+          out = await contextTool.handle(a as unknown as ContextToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);
@@ -222,6 +264,7 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     async shutdown() {
       await watcher.close();
       index.close();
+      await lance.close();
     },
   };
 }
