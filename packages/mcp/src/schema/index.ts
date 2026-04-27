@@ -1,5 +1,7 @@
-import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
-import addFormats from "ajv-formats";
+import { Ajv, type ErrorObject, type ValidateFunction } from "ajv";
+import addFormatsModule from "ajv-formats";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const addFormats = (addFormatsModule as any).default ?? addFormatsModule;
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { MEMORY_TYPES, type MemoryType, vaultPaths } from "../vault/paths.js";

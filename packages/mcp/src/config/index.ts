@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { parse } from "yaml";
-import Ajv from "ajv";
+import { Ajv } from "ajv";
 import { vaultPaths } from "../vault/paths.js";
 
 export interface VaultConfig {

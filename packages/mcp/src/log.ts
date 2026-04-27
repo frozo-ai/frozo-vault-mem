@@ -1,4 +1,4 @@
-import pino, { type Logger } from "pino";
+import { pino, type Logger } from "pino";
 
 const isDev = process.env.NODE_ENV !== "production";
 const level =
