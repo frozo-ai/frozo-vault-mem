@@ -1,9 +1,7 @@
 import { pino, type Logger } from "pino";
 
 const isDev = process.env.NODE_ENV !== "production";
-const level =
-  process.env.VAULT_MEM_LOG_LEVEL ??
-  (isDev ? "info" : "info");
+const level = process.env.VAULT_MEM_LOG_LEVEL ?? (isDev ? "debug" : "info");
 
 export function createLogger(): Logger {
   return pino(
