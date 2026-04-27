@@ -1,0 +1,11 @@
+vault_version: 0.1
+schema_version: 0.1
+default_agent: human
+inbox_routing: always
+
+fts:
+  index_path: _system/index.sqlite
+  rebuild_on_startup: false
+
+audit:
+  log_path: _system/audit.log

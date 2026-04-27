@@ -1,0 +1,38 @@
+{
+  "name": "@vault-mem/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "vault-mem-mcp": "bin/vault-mem-mcp"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.0.4",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "better-sqlite3": "11.5.0",
+    "chokidar": "4.0.1",
+    "commander": "12.1.0",
+    "gray-matter": "4.0.3",
+    "pino": "9.5.0",
+    "proper-lockfile": "4.1.2",
+    "ulid": "2.3.0",
+    "yaml": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.11",
+    "@types/node": "22.9.0",
+    "@types/proper-lockfile": "4.1.4",
+    "pino-pretty": "13.0.0",
+    "tsx": "4.19.2",
+    "vitest": "2.1.5"
+  }
+}

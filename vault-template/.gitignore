@@ -1,0 +1,4 @@
+# FTS index — rebuildable from .md sources
+_system/index.sqlite
+_system/index.sqlite-wal
+_system/index.sqlite-shm

@@ -4,9 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
-This repo currently contains **only `vault-mem-prd.md`** — there is no code, no build system, no tests yet. Phase 0 (folder scaffolding + JSON schemas) has not started. Treat the PRD as the contract: read it before proposing any structural decisions.
+Phase 0 (vault scaffolding) and Phase 1 (MCP server v0.1) are implemented on `feat/phase-1-mcp` and ready to merge to main. The repo holds:
 
-When code lands, this file should be updated with the actual build/test/run commands for each component.
+- `vault-template/` — bundled scaffolding the `init` CLI copies to a working vault
+- `packages/mcp/` — the `@vault-mem/mcp` workspace package (Node 20 + TypeScript ESM)
+- `vault-mem-prd.md` — original PRD (treat as contract)
+- `docs/superpowers/specs/` and `docs/superpowers/plans/` — design and implementation history
+
+See "Running and developing" below for build/test/run commands.
 
 ## What Vault-Mem is
 
@@ -90,11 +95,20 @@ These choices are deliberate — don't substitute without a reason:
 - **Backup:** daily git commit + push to private GitHub; weekly full backup to external drive.
 - **Privacy:** zero cloud dependency by default (DPDP compliance is a stated goal). Don't introduce hosted services without an explicit ask.
 
-## Things to do early when code lands
+## Running and developing
 
-When the first phase of code is added, this file should grow sections for:
+- **Server (default mode):** `node packages/mcp/bin/vault-mem-mcp` — runs MCP over stdio. Vault path resolves from `--vault` flag → `VAULT_MEM_PATH` env → `~/vault-mem/`.
+- **Bootstrap a vault:** `node packages/mcp/bin/vault-mem-mcp init [--target PATH] [--git]`
+- **Health check:** `node packages/mcp/bin/vault-mem-mcp doctor [--vault PATH]`
+- **Rebuild FTS index:** `node packages/mcp/bin/vault-mem-mcp reindex [--vault PATH]`
+- **Tail audit log:** `node packages/mcp/bin/vault-mem-mcp tail-audit [--vault PATH] [-n 50] [--follow]`
+- **Tests:** `pnpm test` (root) or `pnpm --filter @vault-mem/mcp test`
+- **Single test file:** `pnpm --filter @vault-mem/mcp test path/to/file.test.ts`
+- **Type check:** `pnpm typecheck`
+- **Dev (TS without build):** `pnpm --filter @vault-mem/mcp dev`
 
-- How to run the MCP server locally and point Claude Code at it
-- How to run the hygiene daemon manually for one-shot testing (vs. the launchd loop)
-- Schema validation command (single source of truth for "is this memory file well-formed?")
-- How to rebuild the LanceDB index from scratch
+## Where things live
+
+- `vault-template/` — the canonical scaffolding `init` copies from. Schemas, templates, and the sample memory live here. Edit only when adding/changing schema artifacts.
+- `packages/mcp/src/` — server source, organized by responsibility (`config/`, `schema/`, `vault/`, `id/`, `audit/`, `index/`, `tools/`, `cli/`, `server/`). Tests are co-located (`*.test.ts`) for unit work; integration and e2e tests live under `packages/mcp/test/`.
+- `_system/index.sqlite` (inside any materialized vault) — gitignored. Always rebuildable via `reindex`. The `.md` files are the source of truth.

@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+import("../dist/index.js").catch((e) => {
+  process.stderr.write(`vault-mem-mcp: failed to load — did you run 'pnpm --filter @vault-mem/mcp build'?\n${e.message}\n`);
+  process.exit(1);
+});

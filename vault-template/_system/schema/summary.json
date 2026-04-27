@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "vault-mem://schema/summary.json",
+  "allOf": [
+    { "$ref": "_common.json" },
+    {
+      "type": "object",
+      "properties": {
+        "type": { "const": "summary" },
+        "period": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly"]
+        },
+        "covers": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["type", "period", "covers"]
+    }
+  ]
+}

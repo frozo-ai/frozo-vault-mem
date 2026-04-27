@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "vault-mem://schema/question.json",
+  "allOf": [
+    { "$ref": "_common.json" },
+    {
+      "type": "object",
+      "properties": {
+        "type": { "const": "question" },
+        "resolved_by": { "type": ["string", "null"] }
+      },
+      "required": ["type", "resolved_by"]
+    }
+  ]
+}
