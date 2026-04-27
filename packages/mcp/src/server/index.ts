@@ -18,10 +18,12 @@ import {
   createWriteTool,
   createSearchTool,
   createPromoteTool,
+  createContextTool,
 } from "../tools/index.js";
 import type { WriteToolInput } from "../tools/write.js";
 import type { ReadToolInput } from "../tools/read.js";
 import type { PromoteToolInput } from "../tools/promote.js";
+import type { ContextToolInput } from "../tools/context.js";
 import { ToolError } from "../errors.js";
 import { createLogger } from "../log.js";
 
@@ -93,6 +95,7 @@ const TOOL_DEFS = [
           enum: ["inbox", "memory", "archive", "any"],
         },
         limit: { type: "integer", minimum: 1, maximum: 100 },
+        mode: { type: "string", enum: ["fts", "semantic", "hybrid"] },
       },
     },
   },
@@ -103,6 +106,20 @@ const TOOL_DEFS = [
       type: "object",
       required: ["id"],
       properties: { id: { type: "string" }, reason: { type: "string" } },
+    },
+  },
+  {
+    name: "memory.context",
+    description: "Get curated context for a project (summaries lead; semantic-led when query supplied).",
+    inputSchema: {
+      type: "object",
+      required: ["project"],
+      properties: {
+        project: { type: "string" },
+        max_tokens: { type: "integer", minimum: 100, maximum: 16000 },
+        query: { type: "string" },
+        include_inbox: { type: "boolean" },
+      },
     },
   },
 ] as const;
@@ -167,6 +184,15 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     session,
     lance,
   });
+  const contextTool = createContextTool({
+    vault: opts.vault,
+    auditor,
+    index,
+    lance,
+    embedder,
+    agent: sessionAgent,
+    session,
+  });
 
   const server = new Server(
     { name: "vault-mem-mcp", version: "0.1.0" },
@@ -194,6 +220,9 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
           break;
         case "memory.promote":
           out = await promoteTool.handle(a as unknown as PromoteToolInput);
+          break;
+        case "memory.context":
+          out = await contextTool.handle(a as unknown as ContextToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);
