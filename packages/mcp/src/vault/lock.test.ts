@@ -11,7 +11,7 @@ describe("withLock", () => {
     return () => rmSync(dir, { recursive: true, force: true });
   });
 
-  it("serializes concurrent calls on the same path", async () => {
+  it("serializes concurrent calls on the same path (no interleaving)", async () => {
     const path = join(dir, "memo.md");
     writeFileSync(path, "init");
 
@@ -27,7 +27,23 @@ describe("withLock", () => {
     });
 
     await Promise.all([slow, fast]);
-    expect(order).toEqual(["a:start", "a:end", "b:start", "b:end"]);
+
+    // proper-lockfile does not guarantee FIFO ordering — only mutual exclusion.
+    // Assert: each task's start precedes its end, and the two tasks don't interleave.
+    const aStart = order.indexOf("a:start");
+    const aEnd   = order.indexOf("a:end");
+    const bStart = order.indexOf("b:start");
+    const bEnd   = order.indexOf("b:end");
+    expect(aStart).toBeGreaterThanOrEqual(0);
+    expect(bStart).toBeGreaterThanOrEqual(0);
+    expect(aStart).toBeLessThan(aEnd);
+    expect(bStart).toBeLessThan(bEnd);
+    // Non-interleaving: either all a-events come before all b-events, or vice versa.
+    const aMax = Math.max(aStart, aEnd);
+    const aMin = Math.min(aStart, aEnd);
+    const bMax = Math.max(bStart, bEnd);
+    const bMin = Math.min(bStart, bEnd);
+    expect(aMax < bMin || bMax < aMin).toBe(true);
   });
 
   it("releases the lock on error", async () => {
