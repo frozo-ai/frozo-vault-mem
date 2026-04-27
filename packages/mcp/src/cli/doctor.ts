@@ -47,7 +47,47 @@ export async function runDoctor(opts: DoctorOpts): Promise<DoctorResult> {
   } catch { indexOk = false; }
   checks.push({ name: "index", pass: indexOk });
 
-  checks.push({ name: "audit_log", pass: existsSync(paths.auditFile) });
+  // Check row-count match between on-disk files and index
+  let rowCountOk = true;
+  let rowCountDetail: string | undefined;
+  try {
+    const idx = openIndex(paths.indexFile);
+    const indexCount = idx.count();
+    let diskCount = 0;
+    for (const t of MEMORY_TYPES) {
+      const memDir = paths.memoryDir(t);
+      const inboxDir = paths.inboxDir(t);
+      try {
+        const { readdirSync } = await import("node:fs");
+        diskCount += readdirSync(memDir).filter((f) => f.endsWith(".md")).length;
+        diskCount += readdirSync(inboxDir).filter((f) => f.endsWith(".md")).length;
+      } catch { /* missing dir handled by folders check */ }
+    }
+    try {
+      const { readdirSync } = await import("node:fs");
+      diskCount += readdirSync(paths.archiveDir).filter((f) => f.endsWith(".md")).length;
+    } catch { /* missing dir handled by folders check */ }
+    idx.close();
+    if (indexCount > 0 && indexCount !== diskCount) {
+      rowCountOk = false;
+      rowCountDetail = `index has ${indexCount} rows, disk has ${diskCount} .md files (run 'reindex' to reconcile)`;
+    }
+  } catch (e) {
+    rowCountOk = false;
+    rowCountDetail = (e as Error).message;
+  }
+  checks.push({ name: "row_count_match", pass: rowCountOk, detail: rowCountDetail });
+
+  let auditOk = false;
+  let auditDetail: string | undefined;
+  try {
+    const { accessSync, constants } = await import("node:fs");
+    accessSync(paths.auditFile, constants.W_OK);
+    auditOk = true;
+  } catch (e) {
+    auditDetail = `${paths.auditFile}: ${(e as Error).message}`;
+  }
+  checks.push({ name: "audit_log", pass: auditOk, detail: auditDetail });
 
   return { ok: checks.every((c) => c.pass), checks };
 }
