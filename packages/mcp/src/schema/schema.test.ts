@@ -1,8 +1,9 @@
-import { describe, describe as describe2, expect, it } from "vitest";
+import { describe, describe as describe2, describe as describe3, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import matter from "gray-matter";
 
 const VAULT_TEMPLATE = resolve(__dirname, "../../../../vault-template");
 
@@ -94,5 +95,34 @@ describe2("type-specific schemas compile together with _common.json", () => {
     );
     const validate = ajv.compile(typeSchema);
     expect(typeof validate).toBe("function");
+  });
+});
+
+describe3("sample-decision.md", () => {
+  it("parses and validates against decision.json", () => {
+    const raw = readFileSync(
+      resolve(VAULT_TEMPLATE, "memory/decisions/sample-decision.md"),
+      "utf8",
+    );
+    const { data } = matter(raw);
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const common = JSON.parse(
+      readFileSync(
+        resolve(VAULT_TEMPLATE, "_system/schema/_common.json"),
+        "utf8",
+      ),
+    );
+    ajv.addSchema(common, common.$id);
+    const decision = JSON.parse(
+      readFileSync(
+        resolve(VAULT_TEMPLATE, "_system/schema/decision.json"),
+        "utf8",
+      ),
+    );
+    const validate = ajv.compile(decision);
+    const ok = validate(data);
+    if (!ok) console.error(validate.errors);
+    expect(ok).toBe(true);
   });
 });
