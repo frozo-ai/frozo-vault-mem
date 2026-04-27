@@ -27,12 +27,15 @@ describe("memory.search", () => {
     const lance = await openLance(lanceDir);
     const embedder = createMockEmbedder();
     const auditor = new Auditor(paths.auditFile);
-    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human" });
+    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human", lance, embedder });
     const search = createSearchTool({ auditor, index: idx, lance, embedder });
 
     await write.handle({ type: "decision", fields: { title: "Use Supabase", project: "kincare" }, content: "supabase has rls", agent: "human" });
     await write.handle({ type: "observation", fields: { title: "Pricing", project: "kincare" }, content: "supabase free tier", agent: "human" });
     await write.handle({ type: "decision", fields: { title: "Other choice", project: "frozo" }, content: "unrelated content", agent: "human" });
+
+    // After writes, Lance should have rows for the written memories
+    expect(await lance.count()).toBeGreaterThanOrEqual(1);
 
     const r1 = await search.handle({ query: "supabase", mode: "fts" });
     expect(r1.results.length).toBe(2);
@@ -106,7 +109,7 @@ describe("memory.search — query sanitization regression", () => {
     const lance = await openLance(lanceDir);
     const embedder = createMockEmbedder();
     const auditor = new Auditor(paths.auditFile);
-    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human" });
+    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human", lance, embedder });
     const search = createSearchTool({ auditor, index: idx, lance, embedder });
 
     await write.handle({
@@ -147,7 +150,7 @@ describe("memory.search — query sanitization regression", () => {
     const lance = await openLance(lanceDir);
     const embedder = createMockEmbedder();
     const auditor = new Auditor(paths.auditFile);
-    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human" });
+    const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human", lance, embedder });
     const search = createSearchTool({ auditor, index: idx, lance, embedder });
 
     await write.handle({
