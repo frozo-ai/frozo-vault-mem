@@ -22,6 +22,14 @@ describe("openIndex (in-memory)", () => {
     const row = idx.getById("mem_2026-04-27_aaaaaa");
     expect(row?.title).toBe("Use Supabase for auth");
     expect(row?.location).toBe("memory");
+    expect(row?.tags).toEqual(["kincare", "auth"]);
+  });
+
+  it("returns [] for tags when the column is corrupt or missing", () => {
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ tags: [] }));
+    const row = idx.getById("mem_2026-04-27_aaaaaa");
+    expect(row?.tags).toEqual([]);
   });
 
   it("search matches title and body, ranks by BM25", () => {

@@ -93,6 +93,16 @@ function makeHandle(db: DB): IndexHandle {
     FROM memories_fts WHERE id = ?
   `);
 
+  function parseTags(v: unknown): string[] {
+    if (!v) return [];
+    try {
+      const parsed = JSON.parse(String(v));
+      return Array.isArray(parsed) ? parsed.map((x) => String(x)) : [];
+    } catch {
+      return [];
+    }
+  }
+
   function rowFromDb(r: Record<string, unknown> | undefined): IndexRow | null {
     if (!r) return null;
     return {
@@ -100,8 +110,7 @@ function makeHandle(db: DB): IndexHandle {
       type: r["type"] as MemoryType,
       title: String(r["title"]),
       body: String(r["body"]),
-      // Bug 1 fix: use JSON.parse/stringify for correct tags round-trip
-      tags: r["tags"] ? (JSON.parse(String(r["tags"])) as string[]) : [],
+      tags: parseTags(r["tags"]),
       project: r["project"] ? String(r["project"]) : null,
       status: r["status"] as IndexRow["status"],
       location: r["location"] as Location,
@@ -191,8 +200,7 @@ function makeHandle(db: DB): IndexHandle {
           location: r["location"] as Location,
           path: String(r["path"]),
           project: r["project"] ? String(r["project"]) : null,
-          // Bug 1 fix: use JSON.parse for tags
-          tags: r["tags"] ? (JSON.parse(String(r["tags"])) as string[]) : [],
+          tags: parseTags(r["tags"]),
           updated: String(r["updated"]),
         })),
         total: totalRow.n,
