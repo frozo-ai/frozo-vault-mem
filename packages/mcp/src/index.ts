@@ -50,12 +50,14 @@ async function main(argv: string[]): Promise<void> {
 
   program
     .command("reindex")
-    .description("Drop and rebuild the FTS index")
+    .description("Drop and rebuild the FTS and/or embedding index")
     .option("--vault <path>", "Vault root", undefined)
-    .action(async (opts: { vault?: string }) => {
+    .option("--fts-only", "Only rebuild the FTS (SQLite) index; leave embeddings.lance untouched")
+    .option("--semantic-only", "Only rebuild the Lance embedding index; leave the FTS index untouched")
+    .action(async (opts: { vault?: string; ftsOnly?: boolean; semanticOnly?: boolean }) => {
       const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
-      const r = await runReindex({ vault });
-      console.log(`Indexed ${r.count} memories in ${r.ms}ms`);
+      const r = await runReindex({ vault, ftsOnly: opts.ftsOnly, semanticOnly: opts.semanticOnly });
+      console.log(`Indexed ${r.count} memories: FTS in ${r.ftsMs}ms, embeddings in ${r.semanticMs}ms`);
     });
 
   program
