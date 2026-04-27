@@ -2,6 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import * as ulidModule from "ulid";
 const { ulid } = ulidModule as unknown as { ulid: () => string };
+import { join } from "node:path";
 import { loadSchemas } from "../schema/index.js";
 import { loadConfig, resolveConfigPaths } from "../config/index.js";
 import { Auditor } from "../audit/index.js";
@@ -9,6 +10,8 @@ import { openIndex } from "../index/sqlite.js";
 import type { SearchInput } from "../index/sqlite.js";
 import { populateIndex } from "../index/populate.js";
 import { startWatcher, type WatcherHandle } from "../index/watcher.js";
+import { openLance, type LanceHandle } from "../index/lance.js";
+import { createTransformersEmbedder, type Embedder } from "../embedder/index.js";
 import { vaultPaths } from "../vault/paths.js";
 import {
   createReadTool,
@@ -111,15 +114,20 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
   const schemas = loadSchemas(opts.vault);
   const auditor = new Auditor(config.resolvedAuditPath);
   const index = openIndex(config.resolvedIndexPath);
+  const lanceDir = join(paths.systemDir, "embeddings.lance");
+  const lance: LanceHandle = await openLance(lanceDir);
+  const embedder: Embedder = createTransformersEmbedder();
 
   if (config.fts.rebuild_on_startup || index.count() === 0) {
-    await populateIndex({ vault: opts.vault, index, schemas });
+    await populateIndex({ vault: opts.vault, index, schemas, embedder, lance });
   }
 
   const watcher: WatcherHandle = startWatcher({
     vault: opts.vault,
     index,
     schemas,
+    embedder,
+    lance,
   });
   const session = ulid();
   const sessionAgent = config.default_agent;
@@ -131,6 +139,8 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     index,
     defaultAgent: sessionAgent,
     defaultSession: session,
+    embedder,
+    lance,
   });
   const readTool = createReadTool({
     vault: opts.vault,
@@ -145,6 +155,8 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     index,
     agent: sessionAgent,
     session,
+    lance,
+    embedder,
   });
   const promoteTool = createPromoteTool({
     vault: opts.vault,
@@ -153,6 +165,7 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     index,
     agent: sessionAgent,
     session,
+    lance,
   });
 
   const server = new Server(
@@ -222,6 +235,7 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     async shutdown() {
       await watcher.close();
       index.close();
+      await lance.close();
     },
   };
 }

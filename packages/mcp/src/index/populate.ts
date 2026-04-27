@@ -6,11 +6,16 @@ import {
 } from "../vault/paths.js";
 import { type IndexHandle, type IndexRow } from "./sqlite.js";
 import { type CompiledSchemas, validateFrontmatter } from "../schema/index.js";
+import type { Embedder } from "../embedder/index.js";
+import { EMBED_MODEL_ID } from "../embedder/index.js";
+import type { LanceHandle, LanceRow } from "./lance.js";
 
 export interface PopulateDeps {
   vault: string;
   index: IndexHandle;
   schemas: CompiledSchemas;
+  embedder: Embedder;
+  lance: LanceHandle;
 }
 
 export async function populateIndex(deps: PopulateDeps): Promise<{ count: number }> {
@@ -26,6 +31,38 @@ export async function populateIndex(deps: PopulateDeps): Promise<{ count: number
   collectArchive(paths.archiveDir, rows, deps.schemas);
 
   deps.index.rebuild(rows);
+
+  // Batch-embed and rebuild Lance
+  if (rows.length === 0) {
+    await deps.lance.rebuild([]);
+  } else {
+    const BATCH = 32;
+    const lanceRows: LanceRow[] = [];
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const batch = rows.slice(i, i + BATCH);
+      const texts = batch.map((r) => [r.title, r.tags.join(", "), r.body].filter(Boolean).join("\n"));
+      const vectors = await deps.embedder.embedBatch(texts);
+      for (let j = 0; j < batch.length; j++) {
+        const r = batch[j]!;
+        lanceRows.push({
+          id: r.id,
+          vector: vectors[j]!,
+          type: r.type,
+          title: r.title,
+          project: r.project,
+          tags: r.tags,
+          status: r.status,
+          location: r.location,
+          path: r.path,
+          updated: r.updated,
+          schema_version: "0.1",
+          embed_model: EMBED_MODEL_ID,
+        });
+      }
+    }
+    await deps.lance.rebuild(lanceRows);
+  }
+
   return { count: rows.length };
 }
 
