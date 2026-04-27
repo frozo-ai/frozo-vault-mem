@@ -1,4 +1,5 @@
 import { describe, describe as describe2, describe as describe3, expect, it } from "vitest";
+import { loadSchemas, validateFrontmatter } from "./index.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Ajv from "ajv";
@@ -124,5 +125,49 @@ describe3("sample-decision.md", () => {
     const ok = validate(data);
     if (!ok) console.error(validate.errors);
     expect(ok).toBe(true);
+  });
+});
+
+describe("loadSchemas", () => {
+  it("loads _common + 7 type schemas from the vault", () => {
+    const schemas = loadSchemas(VAULT_TEMPLATE);
+    expect(Object.keys(schemas).sort()).toEqual([
+      "decision", "entity", "learning",
+      "observation", "question", "summary", "todo",
+    ]);
+  });
+});
+
+describe("validateFrontmatter", () => {
+  const fm = {
+    id: "mem_2026-04-27_a8f3c0",
+    type: "decision" as const,
+    title: "x",
+    agent: "human",
+    session: null,
+    created: "2026-04-27T14:32:00.000Z",
+    updated: "2026-04-27T14:32:00.000Z",
+    status: "active" as const,
+    schema_version: "0.1",
+  };
+  const schemas = loadSchemas(VAULT_TEMPLATE);
+
+  it("accepts valid frontmatter", () => {
+    const result = validateFrontmatter(schemas, "decision", fm);
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects frontmatter missing required fields", () => {
+    const { id: _omit, ...bad } = fm;
+    const result = validateFrontmatter(schemas, "decision", bad);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => e.message?.includes("required"))).toBe(true);
+    }
+  });
+
+  it("rejects mismatched type", () => {
+    const result = validateFrontmatter(schemas, "decision", { ...fm, type: "observation" });
+    expect(result.ok).toBe(false);
   });
 });
