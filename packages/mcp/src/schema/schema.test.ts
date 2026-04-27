@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, describe as describe2, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Ajv from "ajv";
@@ -67,5 +67,32 @@ describe("_common.json schema", () => {
         schema_version: "0.1",
       }),
     ).toBe(false);
+  });
+});
+
+describe2("type-specific schemas compile together with _common.json", () => {
+  const types = [
+    "decision", "observation", "todo",
+    "learning", "summary", "entity", "question",
+  ] as const;
+
+  it.each(types)("%s schema compiles via $ref into _common.json", (t) => {
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const common = JSON.parse(
+      readFileSync(
+        resolve(VAULT_TEMPLATE, "_system/schema/_common.json"),
+        "utf8",
+      ),
+    );
+    ajv.addSchema(common, common.$id);
+    const typeSchema = JSON.parse(
+      readFileSync(
+        resolve(VAULT_TEMPLATE, `_system/schema/${t}.json`),
+        "utf8",
+      ),
+    );
+    const validate = ajv.compile(typeSchema);
+    expect(typeof validate).toBe("function");
   });
 });
