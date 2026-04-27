@@ -7,6 +7,7 @@ import { type IndexHandle } from "../index/sqlite.js";
 import {
   vaultPaths, type MemoryType, MEMORY_TYPES,
 } from "../vault/paths.js";
+import { withLock } from "../vault/lock.js";
 
 export interface PromoteToolInput {
   id: string;
@@ -72,8 +73,13 @@ export function createPromoteTool(deps: PromoteToolDeps) {
       }
       const to = paths.memoryFile(type, input.id, "memory");
       try {
-        renameSync(from, to);
+        await withLock(from, async () => {
+          renameSync(from, to);
+        });
       } catch (err) {
+        // ToolError thrown inside withLock would propagate as-is; only wrap
+        // unknown errors as promote_failed.
+        if (err instanceof ToolError) throw err;
         throw new ToolError(
           "promote_failed",
           `Failed to move ${from} → ${to}: ${(err as Error).message}`,
