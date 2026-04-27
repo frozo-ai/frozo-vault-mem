@@ -6,6 +6,7 @@ import matter from "gray-matter";
 import { runInit } from "../../../src/cli/init.js";
 import { runReindex } from "../../../src/cli/reindex.js";
 import { vaultPaths } from "../../../src/vault/paths.js";
+import { openLance } from "../../../src/index/lance.js";
 
 describe("reindex", () => {
   let dir: string;
@@ -65,5 +66,32 @@ describe("reindex", () => {
     await expect(
       runReindex({ vault: target, ftsOnly: true, semanticOnly: true }),
     ).rejects.toThrow("mutually exclusive");
+  });
+
+  it("--fts-only does not re-embed (Lance row vectors stay byte-identical)", async () => {
+    const target = join(dir, "vault");
+    await runInit({ target });
+
+    // Initial full reindex (embeds all rows including the sample decision)
+    await runReindex({ vault: target });
+    const paths = vaultPaths(target);
+    const lanceDir = join(paths.systemDir, "embeddings.lance");
+
+    // Capture Lance state via a direct openLance probe
+    const probe1 = await openLance(lanceDir);
+    const before = await probe1.getById("mem_2026-04-27_000001");
+    await probe1.close();
+    expect(before).not.toBeNull();
+    const beforeVec = Array.from(before!.vector);
+
+    // Now run --fts-only and assert Lance vector is byte-identical (not re-embedded)
+    await runReindex({ vault: target, ftsOnly: true });
+    const probe2 = await openLance(lanceDir);
+    const after = await probe2.getById("mem_2026-04-27_000001");
+    await probe2.close();
+    expect(after).not.toBeNull();
+    const afterVec = Array.from(after!.vector);
+
+    expect(afterVec).toEqual(beforeVec);
   });
 });

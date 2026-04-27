@@ -52,7 +52,15 @@ export async function runReindex(opts: ReindexOpts): Promise<ReindexResult> {
   const lance = await openLance(lanceDir);
   const embedder = createTransformersEmbedder();
   const t0 = Date.now();
-  const { count } = await populateIndex({ vault: opts.vault, index: idx, schemas, embedder, lance });
+  const { count } = await populateIndex({
+    vault: opts.vault,
+    index: idx,
+    schemas,
+    embedder,
+    lance,
+    skipFts: !!opts.semanticOnly,
+    skipLance: !!opts.ftsOnly,
+  });
   const totalMs = Date.now() - t0;
   idx.close();
   await lance.close();
