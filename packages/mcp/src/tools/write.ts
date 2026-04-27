@@ -29,6 +29,7 @@ export interface WriteToolDeps {
   auditor: Auditor;
   index: IndexHandle;
   defaultAgent: string;
+  defaultSession?: string | null;
 }
 
 const DEFAULT_TTL: Record<MemoryType, number | null> = {
@@ -49,7 +50,7 @@ export function createWriteTool(deps: WriteToolDeps) {
       const id = generateId();
       const now = new Date().toISOString();
       const agent = input.agent ?? deps.defaultAgent;
-      const session = input.session ?? null;
+      const session = input.session ?? deps.defaultSession ?? null;
 
       const fm: Record<string, unknown> = {
         ...input.fields,

@@ -90,4 +90,25 @@ describe("memory.write", () => {
       }),
     ).rejects.toMatchObject({ kind: "schema_validation_failed" });
   });
+
+  it("uses defaultSession from deps when no session is in input", async () => {
+    const paths = vaultPaths(v.root);
+    const tool = createWriteTool({
+      vault: v.root,
+      schemas: loadSchemas(v.root),
+      auditor: new Auditor(paths.auditFile),
+      index: openIndex(":memory:"),
+      defaultAgent: "human",
+      defaultSession: "01HXSESSION0000000000000",
+    });
+    const result = await tool.handle({
+      type: "decision",
+      fields: { title: "Session test" },
+      content: "x",
+    });
+    const matter = (await import("gray-matter")).default;
+    const { readFileSync } = await import("node:fs");
+    const { data } = matter(readFileSync(result.path, "utf8"));
+    expect(data.session).toBe("01HXSESSION0000000000000");
+  });
 });

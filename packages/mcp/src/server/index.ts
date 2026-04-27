@@ -126,6 +126,7 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     auditor,
     index,
     defaultAgent: sessionAgent,
+    defaultSession: session,
   });
   const readTool = createReadTool({
     vault: opts.vault,
