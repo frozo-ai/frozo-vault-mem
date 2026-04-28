@@ -123,7 +123,7 @@ def run_pass(opts: RunOpts) -> RunReport:
             "duration_ms": report.duration_ms,
             "summary": {
                 name: {k: v for k, v in op.__dict__.items()
-                       if k not in ("name", "skipped", "skip_reason", "error") and v}
+                       if k not in ("name", "skipped", "skip_reason") and v}
                 for name, op in report.ops.items()
             },
         })
