@@ -78,5 +78,33 @@ def test_one_op_failure_does_not_block_others(tmp_vault, monkeypatch):
 
     # link errored
     assert report.ops["link"].error is not None
-    # but triage still ran
+    # but triage still ran (before the failing op)
     assert report.ops["triage"].promoted == 1
+    # AND the ops AFTER link still ran (the runner does not bail on first error)
+    assert "decay" in report.ops
+    assert report.ops["decay"].error is None
+    assert "archive" in report.ops
+    assert report.ops["archive"].error is None
+
+
+def test_keeper_run_summary_surfaces_op_errors(tmp_vault, monkeypatch):
+    """When an op throws, the keeper_run audit summary includes the error string
+    so downstream consumers (tail-audit, future dashboards) can detect partial
+    failures without cross-referencing stderr logs."""
+    _seed_inbox(tmp_vault)
+    paths = vault_paths(str(tmp_vault))
+    Path(paths.audit_file).touch()
+
+    from vault_mem_keeper.ops import link as link_mod
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("synthetic-failure")
+
+    monkeypatch.setattr(link_mod, "run_link", boom)
+
+    run_pass(RunOpts(vault=str(tmp_vault), dry_run=False))
+
+    raw_lines = Path(paths.audit_file).read_text().splitlines()
+    lines = [json.loads(line) for line in raw_lines if line.strip()]
+    keeper_run = next(line for line in lines if line["op"] == "keeper_run")
+    assert "synthetic-failure" in keeper_run["summary"]["link"]["error"]
