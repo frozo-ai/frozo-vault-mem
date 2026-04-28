@@ -21,3 +21,4 @@ Thumbs.db
 
 packages/*/dist/
 *.tsbuildinfo
+__pycache__/
