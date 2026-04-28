@@ -52,3 +52,8 @@ def test_memory_file_paths():
     assert p.memory_file("decision", mid, "inbox") == "/vault/inbox/decisions/mem_2026-04-27_a8f3c0.md"
     assert p.memory_file("decision", mid, "memory") == "/vault/memory/decisions/mem_2026-04-27_a8f3c0.md"
     assert p.memory_file("decision", mid, "archive") == "/vault/archive/mem_2026-04-27_a8f3c0.md"
+
+
+def test_tmp_vault_fixture_exists(tmp_vault):
+    assert (tmp_vault / "_system" / "config.yaml").is_file()
+    assert (tmp_vault / "_system" / "schema" / "_common.json").is_file()
