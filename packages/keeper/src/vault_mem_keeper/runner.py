@@ -1,18 +1,21 @@
 """Runner: orchestrates a single keeper pass."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from time import monotonic
-from typing import Any
 
-import ulid
+import ulid  # noqa: E401
 
 from .audit import Auditor
 from .config import load_keeper_config
 from .frontmatter import load_schemas
-from .logging import configure as configure_logging, get_logger
-from .ops import archive as archive_op, decay as decay_op, link as link_op, triage as triage_op
+from .logging import configure as configure_logging
+from .logging import get_logger
+from .ops import archive as archive_op
+from .ops import decay as decay_op
+from .ops import link as link_op
+from .ops import triage as triage_op
 from .paths import resolve_vault_path, vault_paths
 
 log = get_logger(__name__)

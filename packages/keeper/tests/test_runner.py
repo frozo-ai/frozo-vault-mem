@@ -1,14 +1,11 @@
-from datetime import datetime, timedelta, UTC
-from pathlib import Path
 import json
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import frontmatter
-import pytest
 
-from vault_mem_keeper.audit import Auditor
-from vault_mem_keeper.config import load_keeper_config
-from vault_mem_keeper.runner import run_pass, RunOpts
 from vault_mem_keeper.paths import vault_paths
+from vault_mem_keeper.runner import RunOpts, run_pass
 
 
 def _seed_inbox(vault_root: Path) -> str:
@@ -46,8 +43,9 @@ def test_run_pass_orchestrates_ops_in_order(tmp_vault):
     assert not Path(paths.memory_file("decision", mid, "inbox")).exists()
     assert Path(paths.memory_file("decision", mid, "memory")).exists()
     # Audit log has a keeper_run summary line
-    lines = [json.loads(l) for l in Path(paths.audit_file).read_text().splitlines() if l.strip()]
-    assert any(l["op"] == "keeper_run" and l["agent"] == "keeper" for l in lines)
+    raw_lines = Path(paths.audit_file).read_text().splitlines()
+    lines = [json.loads(line) for line in raw_lines if line.strip()]
+    assert any(line["op"] == "keeper_run" and line["agent"] == "keeper" for line in lines)
 
 
 def test_run_pass_dry_run_makes_no_changes(tmp_vault):
@@ -64,7 +62,7 @@ def test_run_pass_dry_run_makes_no_changes(tmp_vault):
 
 
 def test_one_op_failure_does_not_block_others(tmp_vault, monkeypatch):
-    mid = _seed_inbox(tmp_vault)
+    _seed_inbox(tmp_vault)
     paths = vault_paths(str(tmp_vault))
     Path(paths.audit_file).touch()
 

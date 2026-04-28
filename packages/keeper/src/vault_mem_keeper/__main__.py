@@ -33,7 +33,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     report = run_pass(opts)
 
     prefix = "[dry-run] " if args.dry_run else ""
-    sys.stdout.write(f"{prefix}keeper run {report.run_id}  started {report.started_at}  vault={vault}\n")
+    sys.stdout.write(
+        f"{prefix}keeper run {report.run_id}  started {report.started_at}  vault={vault}\n"
+    )
     for name, op in report.ops.items():
         if op.skipped:
             sys.stdout.write(f"  {name}: skipped ({op.skip_reason})\n")
@@ -121,7 +123,9 @@ def main(argv: list[str] | None = None) -> int:
     p_run = sub.add_parser("run", help="Run a keeper pass")
     _vault_arg(p_run)
     p_run.add_argument("--dry-run", action="store_true")
-    p_run.add_argument("--ops", default=None, help="Comma-separated op subset (e.g. 'triage,decay')")
+    p_run.add_argument(
+        "--ops", default=None, help="Comma-separated op subset (e.g. 'triage,decay')"
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_status = sub.add_parser("status", help="Show last keeper_run summary")
