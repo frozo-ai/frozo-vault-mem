@@ -27,7 +27,7 @@ class LinkReport:
 def run_link(
     paths: VaultPaths,
     cfg: KeeperConfig,
-    schemas: dict[str, Any],
+    schemas: dict[str, Any],  # noqa: ARG001  # accepted for op-signature uniformity; link trusts FTS/Lance state instead of re-validating frontmatter
     audit: Auditor,
     *,
     dry_run: bool,
