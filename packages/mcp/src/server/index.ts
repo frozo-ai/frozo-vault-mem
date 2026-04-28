@@ -38,7 +38,7 @@ export interface BuiltServer {
 
 const TOOL_DEFS = [
   {
-    name: "memory.write",
+    name: "memory_write",
     description:
       "Record a decision, observation, learning, todo, entity, or question into the user's persistent vault. " +
       "USE THIS PROACTIVELY whenever the user: makes a choice ('we'll go with X'), shares a learning or insight, " +
@@ -70,9 +70,9 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.read",
+    name: "memory_read",
     description:
-      "Fetch one memory by exact id. Use after `memory.search` returns the row you want, " +
+      "Fetch one memory by exact id. Use after `memory_search` returns the row you want, " +
       "or when the user references an id directly. Returns frontmatter, full markdown body, " +
       "current location (inbox/memory/archive), and absolute path.",
     inputSchema: {
@@ -82,7 +82,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.search",
+    name: "memory_search",
     description:
       "Search the vault for memories. USE THIS BEFORE answering any question about the user's projects, " +
       "decisions, people, or tools — the user has a persistent memory layer; consult it before relying on " +
@@ -117,7 +117,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.promote",
+    name: "memory_promote",
     description:
       "Manually graduate a memory from inbox/ to canonical memory/ before the keeper's 24h auto-promote tick. " +
       "Use only when the user explicitly asks to confirm or promote a memory. The keeper daemon promotes most " +
@@ -129,7 +129,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.context",
+    name: "memory_context",
     description:
       "Load a curated bundle of memories for a project, packed within a token budget. " +
       "USE THIS AT THE START of any multi-turn project conversation to ground yourself in the user's " +
@@ -235,19 +235,19 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
       let out: unknown;
       const a = (args ?? {}) as Record<string, unknown>;
       switch (name) {
-        case "memory.write":
+        case "memory_write":
           out = await writeTool.handle(a as unknown as WriteToolInput);
           break;
-        case "memory.read":
+        case "memory_read":
           out = await readTool.handle(a as unknown as ReadToolInput);
           break;
-        case "memory.search":
+        case "memory_search":
           out = await searchTool.handle(a as unknown as SearchInput);
           break;
-        case "memory.promote":
+        case "memory_promote":
           out = await promoteTool.handle(a as unknown as PromoteToolInput);
           break;
-        case "memory.context":
+        case "memory_context":
           out = await contextTool.handle(a as unknown as ContextToolInput);
           break;
         default:
@@ -267,7 +267,7 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
       }
       log.error({ corr, err }, "uncaught tool error");
       auditor.write({
-        op: `${name.replace("memory.", "")}:failed` as never,
+        op: `${name.replace(/^memory[_.]/, "")}:failed` as never,
         agent: sessionAgent,
         session,
         correlation_id: corr,

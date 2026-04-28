@@ -15,7 +15,7 @@ Vault-Mem is a personal-use, local-first shared memory layer for any MCP-aware a
 This document specifies the first shippable artifact:
 
 1. The **vault scaffolding** — folder layout, JSON Schemas for all 7 memory types, markdown templates, config, audit log, sample memory.
-2. A **TypeScript MCP server** — local stdio daemon exposing `memory.read`, `memory.write`, `memory.search`, plus `memory.promote` and a small set of CLI subcommands.
+2. A **TypeScript MCP server** — local stdio daemon exposing `memory_read`, `memory_write`, `memory_search`, plus `memory_promote` and a small set of CLI subcommands.
 
 After this phase ships, Claude Code can read and write memories during a real coding session, and the vault remains coherent and human-editable in Obsidian.
 
@@ -25,7 +25,7 @@ After this phase ships, Claude Code can read and write memories during a real co
 - Monorepo skeleton (this repo) with `packages/mcp/` and `vault-template/`.
 - Vault scaffolding (Phase 0).
 - MCP server (Phase 1) on Node 20 LTS + pnpm + stdio transport.
-- 4 MCP tools: `memory.read`, `memory.write`, `memory.search`, `memory.promote`.
+- 4 MCP tools: `memory_read`, `memory_write`, `memory_search`, `memory_promote`.
 - 4 CLI subcommands: `init`, `doctor`, `reindex`, `tail-audit`.
 - SQLite FTS5 index with chokidar-driven incremental updates.
 - JSONL audit log.
@@ -33,7 +33,7 @@ After this phase ships, Claude Code can read and write memories during a real co
 
 **Out of scope** (do not build, even if it feels small):
 - Embeddings / semantic search (Phase 2).
-- `memory.update`, `memory.link`, `memory.contradict`, `memory.query`, `memory.recent`, `memory.context` (Phase 2+).
+- `memory_update`, `memory_link`, `memory_contradict`, `memory_query`, `memory_recent`, `memory_context` (Phase 2+).
 - Hygiene daemon, Telegram approval, network transport, bearer-token auth.
 - Schema migration runner, audit log rotation, Obsidian plugin.
 - Multi-vault support, hot reload, backup/restore commands.
@@ -200,7 +200,7 @@ All tool handlers live in `packages/mcp/src/tools/`. Each handler:
 2. Calls `vault/`, `schema/`, `index/`, `audit/` as needed.
 3. Returns a structured result or a typed error.
 
-### 5.1 `memory.read`
+### 5.1 `memory_read`
 
 ```ts
 input:  { id: string }
@@ -216,7 +216,7 @@ output: {
 
 **Errors:** `not_found`, `invalid_schema` (file exists but frontmatter fails validation — surfaced loudly).
 
-### 5.2 `memory.write`
+### 5.2 `memory_write`
 
 ```ts
 input: {
@@ -238,7 +238,7 @@ output: {
 
 **Errors:** `schema_validation_failed`, `inbox_write_failed`.
 
-### 5.3 `memory.search`
+### 5.3 `memory_search`
 
 ```ts
 input: {
@@ -268,9 +268,9 @@ output: {
 
 Single SQL query. Filters apply as `WHERE` clauses on indexed columns; FTS5 MATCH on `title` + `body` + `tags`.
 
-### 5.4 `memory.promote` (manual triage helper)
+### 5.4 `memory_promote` (manual triage helper)
 
-Without the hygiene daemon (Phase 3), every write lives in `inbox/` indefinitely. `memory.promote` lets the human or a trusted agent manually graduate a memory from `inbox/<type>/` to `memory/<type>/`.
+Without the hygiene daemon (Phase 3), every write lives in `inbox/` indefinitely. `memory_promote` lets the human or a trusted agent manually graduate a memory from `inbox/<type>/` to `memory/<type>/`.
 
 ```ts
 input: {
@@ -291,7 +291,7 @@ output: {
 4. Audit line: `{op: "promote", id, from, to, reason}`.
 5. Index `location` column updates via the chokidar reconcile path (unlink + add events on the moved file).
 
-**Note:** `memory.promote` is a pure location change — frontmatter is **not** rewritten. The `updated` field tracks when content changed; promote is a triage event captured in the audit log, not a content edit.
+**Note:** `memory_promote` is a pure location change — frontmatter is **not** rewritten. The `updated` field tracks when content changed; promote is a triage event captured in the audit log, not a content edit.
 
 **Errors:** `not_found`, `not_in_inbox`, `invalid_schema`, `promote_failed`.
 
@@ -351,7 +351,7 @@ Tails `_system/audit.log` with each JSONL line pretty-printed. `--follow` watche
 
 ## 7. Data flow
 
-### 7.1 Write path (`memory.write`)
+### 7.1 Write path (`memory_write`)
 
 ```
 1. Receive tool call → tools/write.ts
@@ -374,7 +374,7 @@ Tails `_system/audit.log` with each JSONL line pretty-printed. `--follow` watche
 - Step 9 fails after 8 → file exists but unaudited; surface as `warnings[]` entry. The file is the source of truth, audit is a log.
 - Step 10 fails after 8/9 → file + audit recorded, index stale; log a warning. The chokidar watcher reconciles on its next tick.
 
-### 7.2 Read path (`memory.read`)
+### 7.2 Read path (`memory_read`)
 
 ```
 1. tools/read.ts receives {id}
@@ -387,7 +387,7 @@ Tails `_system/audit.log` with each JSONL line pretty-printed. `--follow` watche
 7. Return {id, type, frontmatter, content, path, location}
 ```
 
-### 7.3 Search path (`memory.search`)
+### 7.3 Search path (`memory_search`)
 
 ```
 1. tools/search.ts receives {query, type?, project?, status?, location?, limit?}
@@ -409,7 +409,7 @@ Tails `_system/audit.log` with each JSONL line pretty-printed. `--follow` watche
 5. Return {results, total}
 ```
 
-### 7.4 Promote path (`memory.promote`)
+### 7.4 Promote path (`memory_promote`)
 
 ```
 1. tools/promote.ts receives {id, reason?}
@@ -458,7 +458,7 @@ The temp suffix includes pid + random bytes so two concurrent writes never colli
 
 ### 8.2 Locking
 
-- **Per-file advisory locks** via `proper-lockfile` around `memory.write` and `memory.promote`. Locks the destination path; concurrent writes to the same `id` serialize.
+- **Per-file advisory locks** via `proper-lockfile` around `memory_write` and `memory_promote`. Locks the destination path; concurrent writes to the same `id` serialize.
 - **No global vault lock.** Reads never lock. SQLite WAL mode provides reader/writer concurrency on the index.
 - **Obsidian edits are unlocked.** The watcher reconciles them. If the user happens to be editing a file at the instant the server writes to it, the rename wins atomically and Obsidian reloads from disk (its default).
 
@@ -507,7 +507,7 @@ PRAGMA user_version = 1;  -- index schema version
 **Lifecycle:**
 
 - **Open on startup.** If the file is missing or `config.fts.rebuild_on_startup: true`, walk the vault and batch-insert in one transaction.
-- **Incremental during runtime.** Each `memory.write` does a synchronous `INSERT`. Chokidar handles external edits and promotes via upsert/delete.
+- **Incremental during runtime.** Each `memory_write` does a synchronous `INSERT`. Chokidar handles external edits and promotes via upsert/delete.
 - **Schema migrations.** `PRAGMA user_version` tracks the index schema version. On startup, if the on-disk version is older than the code expects, drop and rebuild. Cheap and correct.
 - **Corruption recovery.** Any SQLite error on open → log, drop the file, rebuild. The index is never authoritative; the `.md` files are.
 
@@ -581,10 +581,10 @@ This phase is **done** when all of the following hold:
 4. `vault-mem-mcp init --target /tmp/test-vault --git` produces a valid vault that opens cleanly in Obsidian.
 5. `vault-mem-mcp doctor --vault /tmp/test-vault` reports all-pass.
 6. The MCP server is registered in Claude Code's MCP config and a real Claude Code session can:
-   a. Call `memory.write` to record a decision; the file appears in `inbox/decisions/` and is schema-valid.
-   b. Call `memory.search` and find that decision.
-   c. Call `memory.read` by id and get the full frontmatter + content back.
-   d. Call `memory.promote` to move it to `memory/decisions/`; subsequent searches reflect the new location.
+   a. Call `memory_write` to record a decision; the file appears in `inbox/decisions/` and is schema-valid.
+   b. Call `memory_search` and find that decision.
+   c. Call `memory_read` by id and get the full frontmatter + content back.
+   d. Call `memory_promote` to move it to `memory/decisions/`; subsequent searches reflect the new location.
 7. `vault-mem-mcp tail-audit --follow` shows audit lines appearing in real time during the session above.
 8. After all of the above, opening the vault in Obsidian shows the memories as readable, well-formatted markdown — no manual cleanup needed.
 

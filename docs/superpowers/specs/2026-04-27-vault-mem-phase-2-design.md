@@ -15,8 +15,8 @@ Phase 1 shipped a working MCP server with FTS5 keyword search. Phase 2 adds:
 
 - A local embedding pipeline using `@xenova/transformers` running ONNX-quantized `all-MiniLM-L6-v2` in the existing Node process (no Python dependency).
 - A LanceDB vector index parallel to the FTS5 index.
-- A new `mode: "fts" | "semantic" | "hybrid"` parameter on `memory.search` (default `hybrid`, using Reciprocal Rank Fusion).
-- A new `memory.context(project, max_tokens, query?)` tool that returns curated context for a project — summary-led when no query, semantic-led when query supplied.
+- A new `mode: "fts" | "semantic" | "hybrid"` parameter on `memory_search` (default `hybrid`, using Reciprocal Rank Fusion).
+- A new `memory_context(project, max_tokens, query?)` tool that returns curated context for a project — summary-led when no query, semantic-led when query supplied.
 
 The Phase 2 "done when" gate (PRD §8): *"Semantic search finds relevant memories I didn't explicitly mention."*
 
@@ -28,9 +28,9 @@ After Phase 2 ships, Phase 3 (Python hygiene daemon) gets started. Phase 3's aut
 - New module `src/embedder/` with lazy-loaded Transformers.js pipeline.
 - New module `src/index/lance.ts` mirroring the Phase 1 `IndexHandle` shape for LanceDB.
 - New module `src/index/hybrid.ts` implementing Reciprocal Rank Fusion.
-- New tool `memory.context`.
-- Extension of `memory.search` with `mode` parameter (default `hybrid`).
-- Extension of `memory.write` to also embed + Lance upsert synchronously.
+- New tool `memory_context`.
+- Extension of `memory_search` with `mode` parameter (default `hybrid`).
+- Extension of `memory_write` to also embed + Lance upsert synchronously.
 - Extension of the chokidar watcher to also embed + Lance upsert on file events.
 - Extension of `populate` to batch-embed during initial vault scan.
 - Extension of `reindex` CLI to drop and rebuild both indexes.
@@ -182,7 +182,7 @@ No row-by-row migration needed — vectors are derived data.
 
 ## 6. MCP tool API
 
-### 6.1 `memory.search` — extended
+### 6.1 `memory_search` — extended
 
 ```ts
 input: {
@@ -239,7 +239,7 @@ Filters (`type`, `project`, `status`, `location`) apply identically across modes
 
 Documented in the tool's MCP description so callers know.
 
-### 6.2 `memory.context` — new
+### 6.2 `memory_context` — new
 
 ```ts
 input: {
@@ -301,14 +301,14 @@ We do *not* truncate within an item. If a single memory exceeds `max_tokens`, it
 
 ### 6.3 Unchanged tools
 
-`memory.read`, `memory.write` (API), `memory.promote` (API). Internals updated:
+`memory_read`, `memory_write` (API), `memory_promote` (API). Internals updated:
 
-- `memory.write` now performs steps 5–6 of §7.1 in addition to Phase 1 logic.
-- `memory.promote` updates Lance metadata in place after the rename (avoids re-embed).
+- `memory_write` now performs steps 5–6 of §7.1 in addition to Phase 1 logic.
+- `memory_promote` updates Lance metadata in place after the rename (avoids re-embed).
 
 ## 7. Data flow
 
-### 7.1 Write path (`memory.write`)
+### 7.1 Write path (`memory_write`)
 
 ```
 1. Validate input shape (Phase 1)
@@ -375,7 +375,7 @@ chokidar unlink:
   2. NEW: Lance delete by id.
 ```
 
-### 7.5 Context path (`memory.context`)
+### 7.5 Context path (`memory_context`)
 
 ```
 1. Validate input.
@@ -434,21 +434,21 @@ Detail strings on failure: e.g., `"embeddings_index has 4 rows, FTS has 5 — ru
 
 ### 10.2 Integration (against tmpVault)
 
-- `memory.write` synchronously embeds + Lance upserts. Subsequent `memory.search` with `mode: "semantic"` finds the just-written memory.
-- `memory.search` semantic: write a memory titled "Use Supabase for auth" with body "Family multi-tenancy via RLS"; query `"authentication choices"` (no shared keywords); semantic finds it; FTS does not.
-- `memory.search` hybrid: write a memory mentioning "Supabase"; verify hybrid finds it both for `query: "Supabase"` (FTS-strong) and for `query: "auth backend"` (semantic-strong).
-- `memory.context` no query: write 5 decisions and 1 summary for project X; call with `max_tokens: 200`; verify summary leads, decisions follow in recency order, total within budget.
-- `memory.context` with query: write 3 decisions about auth + 3 unrelated; call with `query: "authentication"`; verify auth memories rank higher.
-- `memory.promote`: promote a memory; immediately call `memory.search` with `mode: "semantic"` and `location: "memory"` filter — finds the promoted memory.
+- `memory_write` synchronously embeds + Lance upserts. Subsequent `memory_search` with `mode: "semantic"` finds the just-written memory.
+- `memory_search` semantic: write a memory titled "Use Supabase for auth" with body "Family multi-tenancy via RLS"; query `"authentication choices"` (no shared keywords); semantic finds it; FTS does not.
+- `memory_search` hybrid: write a memory mentioning "Supabase"; verify hybrid finds it both for `query: "Supabase"` (FTS-strong) and for `query: "auth backend"` (semantic-strong).
+- `memory_context` no query: write 5 decisions and 1 summary for project X; call with `max_tokens: 200`; verify summary leads, decisions follow in recency order, total within budget.
+- `memory_context` with query: write 3 decisions about auth + 3 unrelated; call with `query: "authentication"`; verify auth memories rank higher.
+- `memory_promote`: promote a memory; immediately call `memory_search` with `mode: "semantic"` and `location: "memory"` filter — finds the promoted memory.
 
 ### 10.3 E2E (one new test)
 
-Round-trip a memory through MCP transport, then call `memory.search` with `mode: "hybrid"` via `client.callTool`. Find it.
+Round-trip a memory through MCP transport, then call `memory_search` with `mode: "hybrid"` via `client.callTool`. Find it.
 
 ### 10.4 Cold-start behavior
 
-- First `memory.write` after fresh vault + fresh server completes within a generous timeout (e.g., 10s) to allow for HF cache miss on the model download.
-- Second `memory.write` completes in <500ms.
+- First `memory_write` after fresh vault + fresh server completes within a generous timeout (e.g., 10s) to allow for HF cache miss on the model download.
+- Second `memory_write` completes in <500ms.
 
 ### 10.5 What's deliberately *not* tested
 
@@ -464,8 +464,8 @@ This phase is **done** when all of the following hold:
 2. `pnpm --filter @vault-mem/mcp test` passes all unit + integration + e2e tests.
 3. `pnpm --filter @vault-mem/mcp typecheck` is clean.
 4. `vault-mem-mcp doctor` reports 9/9 PASS on a freshly initialized vault (after a populate cycle).
-5. Live test: from a real Claude Code session, write a memory whose title and body share *no* keywords with a planned query (e.g., title `"Use Supabase for auth"`, query `"login mechanism choices"`). `memory.search` with `mode: "semantic"` returns it. `memory.search` with default (hybrid) also returns it.
-6. `memory.context` returns a coherent ordered set for an existing project, with summaries leading and content fitting within the requested token budget.
+5. Live test: from a real Claude Code session, write a memory whose title and body share *no* keywords with a planned query (e.g., title `"Use Supabase for auth"`, query `"login mechanism choices"`). `memory_search` with `mode: "semantic"` returns it. `memory_search` with default (hybrid) also returns it.
+6. `memory_context` returns a coherent ordered set for an existing project, with summaries leading and content fitting within the requested token budget.
 7. `tail-audit` shows new `mode` and `context` op entries.
 
 When 1–7 hold, Phase 2 is shipped and Phase 3 (Python hygiene daemon) planning can begin.

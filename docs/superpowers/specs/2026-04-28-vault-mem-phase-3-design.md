@@ -12,7 +12,7 @@
 
 ## 1. Context & purpose
 
-Phase 1 shipped a working MCP server with FTS5 + 4 tools. Phase 2 added local embeddings, LanceDB, hybrid semantic search, and `memory.context`. Phase 3 adds the **hygiene daemon** — a Python script that runs every 30 min via `launchd`, performs autonomous coherence operations on the vault, and exits.
+Phase 1 shipped a working MCP server with FTS5 + 4 tools. Phase 2 added local embeddings, LanceDB, hybrid semantic search, and `memory_context`. Phase 3 adds the **hygiene daemon** — a Python script that runs every 30 min via `launchd`, performs autonomous coherence operations on the vault, and exits.
 
 PRD Phase 3 v0.1 covers four operations:
 
@@ -261,7 +261,7 @@ For each memory in memory/<type>/<id>.md:
     audit.write({op: "archive", agent: "keeper", session: run_id, id, from, to, reasons})
 ```
 
-**Idempotency:** source no longer exists post-archive. Archive `.md` keeps full frontmatter (with `status: "archived"`). The TS `memory.read` tool's archive disk-fallback handles them.
+**Idempotency:** source no longer exists post-archive. Archive `.md` keeps full frontmatter (with `status: "archived"`). The TS `memory_read` tool's archive disk-fallback handles them.
 
 ## 5. Run orchestration (`runner.py`)
 
@@ -428,7 +428,7 @@ Three categories:
 
 - One pytest test that:
   - Initializes a vault using the existing TS `init` CLI (subprocess invocation).
-  - Seeds memories via `memory.write` (subprocess invocation).
+  - Seeds memories via `memory_write` (subprocess invocation).
   - Runs the keeper non-dry-run.
   - Asserts the expected file system mutations occurred.
   - Re-runs `vault-mem-mcp doctor` and asserts ≥9 PASS lines (or notes which counts went stale).

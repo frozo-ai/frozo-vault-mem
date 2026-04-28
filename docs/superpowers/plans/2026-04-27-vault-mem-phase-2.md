@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a local-first embedding pipeline (Transformers.js + ONNX MiniLM), a LanceDB vector index, hybrid (FTS+semantic) search via Reciprocal Rank Fusion, and a new `memory.context` tool — all inside the existing Node MCP server.
+**Goal:** Add a local-first embedding pipeline (Transformers.js + ONNX MiniLM), a LanceDB vector index, hybrid (FTS+semantic) search via Reciprocal Rank Fusion, and a new `memory_context` tool — all inside the existing Node MCP server.
 
 **Architecture:** Reuse Phase 1's module-injection pattern. Add `Embedder` and `IndexHandle`-shaped Lance handle to the dependency tree passed to tools. Watcher and write path call the embedder synchronously after FTS upsert; reads/searches dispatch by mode. Embedder model loads lazily on first call (1–2 s cold cache, ~50 ms warm).
 
@@ -39,15 +39,15 @@
 - `packages/mcp/src/tools/promote.ts` — in-place Lance metadata update
 - `packages/mcp/test/integration/promote.test.ts` — assert Lance location updated
 - `packages/mcp/src/tools/index.ts` — re-export `createContextTool`
-- `packages/mcp/src/server/index.ts` — instantiate embedder + Lance, pass to tools, register `memory.context`
-- `packages/mcp/test/e2e/server.test.ts` — call `memory.context` round-trip
+- `packages/mcp/src/server/index.ts` — instantiate embedder + Lance, pass to tools, register `memory_context`
+- `packages/mcp/test/e2e/server.test.ts` — call `memory_context` round-trip
 - `packages/mcp/src/cli/reindex.ts` — `--fts-only` / `--semantic-only` flags + Lance rebuild
 - `packages/mcp/test/integration/cli/reindex.test.ts` — flag-driven scenarios
 - `packages/mcp/src/cli/doctor.ts` — 2 new checks (`embeddings_index`, `embeddings_count_match`)
 - `packages/mcp/test/integration/cli/doctor.test.ts` — assertions for new checks
 - `packages/mcp/src/index.ts` — pass new flags through commander
 - `vault-template/.gitignore` — add `_system/embeddings.lance/`
-- `README.md` — document the `mode` parameter and `memory.context`
+- `README.md` — document the `mode` parameter and `memory_context`
 
 ---
 
@@ -1270,10 +1270,10 @@ Each test's cleanup callback must `rmSync(lanceDir, { recursive: true, force: tr
 
 Also update existing `createWriteTool` invocations in the same file to receive `embedder` and `lance` (Task 8 will add these args; for now, pass undefined where the write tool is instantiated for setup; you can also defer that step until Task 8 is run, since the existing tests don't yet semantic-verify the write side).
 
-Add three new tests at the bottom of the file (`describe("memory.search — semantic and hybrid modes", ...)`):
+Add three new tests at the bottom of the file (`describe("memory_search — semantic and hybrid modes", ...)`):
 
 ```ts
-describe("memory.search — semantic and hybrid modes", () => {
+describe("memory_search — semantic and hybrid modes", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -1335,7 +1335,7 @@ Expected: all existing search tests pass + 3 new mode tests pass.
 
 ```bash
 git add packages/mcp/src/tools/search.ts packages/mcp/test/integration/search.test.ts
-git commit -m "feat(mcp): add mode parameter to memory.search (fts/semantic/hybrid)"
+git commit -m "feat(mcp): add mode parameter to memory_search (fts/semantic/hybrid)"
 ```
 
 ---
@@ -1562,7 +1562,7 @@ git commit -m "feat(mcp): promote tool updates Lance metadata in place"
 
 ---
 
-### Task 10: `memory.context` tool
+### Task 10: `memory_context` tool
 
 **Files:**
 - Modify: `packages/mcp/src/index/sqlite.ts` (add `list(filter)` method)
@@ -1571,7 +1571,7 @@ git commit -m "feat(mcp): promote tool updates Lance metadata in place"
 - Create: `packages/mcp/test/integration/context.test.ts`
 - Modify: `packages/mcp/src/tools/index.ts`
 
-**Why the IndexHandle extension:** `memory.context` needs to enumerate all rows matching `(project, type, status, location)` filters *without* a full-text MATCH. FTS5 has no native "list everything" expression — using a stop-word OR query is unreliable because Porter-stemmed tokens may not be present in short memory bodies. Adding a `list(filter)` method that does a plain `SELECT ... FROM memories_fts WHERE ...` on the indexed metadata columns is clean and consistent with the existing `search()` filter shape.
+**Why the IndexHandle extension:** `memory_context` needs to enumerate all rows matching `(project, type, status, location)` filters *without* a full-text MATCH. FTS5 has no native "list everything" expression — using a stop-word OR query is unreliable because Porter-stemmed tokens may not be present in short memory bodies. Adding a `list(filter)` method that does a plain `SELECT ... FROM memories_fts WHERE ...` on the indexed metadata columns is clean and consistent with the existing `search()` filter shape.
 
 - [ ] **Step 0a: Add `list(filter)` to `IndexHandle` in `packages/mcp/src/index/sqlite.ts`**
 
@@ -1659,7 +1659,7 @@ import { openLance } from "../../src/index/lance.js";
 import { createMockEmbedder } from "../../src/embedder/mock.js";
 import { vaultPaths, MEMORY_TYPES } from "../../src/vault/paths.js";
 
-describe("memory.context", () => {
+describe("memory_context", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -1940,7 +1940,7 @@ Expected: 3 passing.
 
 ```bash
 git add packages/mcp/src/tools/context.ts packages/mcp/src/tools/index.ts packages/mcp/test/integration/context.test.ts
-git commit -m "feat(mcp): implement memory.context tool"
+git commit -m "feat(mcp): implement memory_context tool"
 ```
 
 ---
@@ -2011,11 +2011,11 @@ Update `startWatcher` call:
   });
 ```
 
-Add `memory.context` to `TOOL_DEFS`:
+Add `memory_context` to `TOOL_DEFS`:
 
 ```ts
   {
-    name: "memory.context",
+    name: "memory_context",
     description: "Get curated context for a project (summaries lead; semantic-led when query supplied).",
     inputSchema: {
       type: "object",
@@ -2030,16 +2030,16 @@ Add `memory.context` to `TOOL_DEFS`:
   },
 ```
 
-Add `memory.search` `mode` to its inputSchema's properties:
+Add `memory_search` `mode` to its inputSchema's properties:
 
 ```ts
         mode: { type: "string", enum: ["fts", "semantic", "hybrid"] },
 ```
 
-Extend the dispatch switch to add `memory.context`:
+Extend the dispatch switch to add `memory_context`:
 
 ```ts
-        case "memory.context": out = await contextTool.handle(a as ContextToolInput); break;
+        case "memory_context": out = await contextTool.handle(a as ContextToolInput); break;
 ```
 
 Update `shutdown()`:
@@ -2052,13 +2052,13 @@ Update `shutdown()`:
     },
 ```
 
-- [ ] **Step 2: Update e2e test to round-trip `memory.context`**
+- [ ] **Step 2: Update e2e test to round-trip `memory_context`**
 
 In `packages/mcp/test/e2e/server.test.ts`, append after the existing `promote` assertions and before client.close():
 
 ```ts
     const ctx = await client.callTool({
-      name: "memory.context",
+      name: "memory_context",
       arguments: { project: "demo", max_tokens: 4000 },
     });
     const ctxOut = JSON.parse((ctx.content as Array<{ text: string }>)[0]!.text);
@@ -2086,7 +2086,7 @@ Expected: full suite passing, typecheck clean. Build produces dist/.
 
 ```bash
 git add packages/mcp/src/server packages/mcp/test/e2e
-git commit -m "feat(mcp): wire embedder + Lance into server, register memory.context"
+git commit -m "feat(mcp): wire embedder + Lance into server, register memory_context"
 ```
 
 ---
@@ -2366,10 +2366,10 @@ Find the "Tools" section and replace with:
 ```markdown
 ## Tools
 
-- `memory.read` · `memory.write` · `memory.search` · `memory.promote` · `memory.context`
+- `memory_read` · `memory_write` · `memory_search` · `memory_promote` · `memory_context`
 
-`memory.search` accepts `mode: "fts" | "semantic" | "hybrid"` (default `hybrid`).
-`memory.context` returns curated project context within a token budget; pass `query` for semantic-led ranking.
+`memory_search` accepts `mode: "fts" | "semantic" | "hybrid"` (default `hybrid`).
+`memory_context` returns curated project context within a token budget; pass `query` for semantic-led ranking.
 ```
 
 - [ ] **Step 3: Run full verification matrix**

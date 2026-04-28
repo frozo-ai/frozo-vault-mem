@@ -26,7 +26,7 @@ describe("MCP server (in-memory transport)", () => {
     await client.connect(b);
 
     const wrote = await client.callTool({
-      name: "memory.write",
+      name: "memory_write",
       arguments: {
         type: "decision",
         fields: { title: "E2E test", project: "demo" },
@@ -38,28 +38,28 @@ describe("MCP server (in-memory transport)", () => {
     expect(writeOut.id).toMatch(/^mem_/);
 
     const read = await client.callTool({
-      name: "memory.read",
+      name: "memory_read",
       arguments: { id: writeOut.id },
     });
     const readOut = JSON.parse((read.content as Array<{ text: string }>)[0]!.text);
     expect(readOut.frontmatter.title).toBe("E2E test");
 
     const search = await client.callTool({
-      name: "memory.search",
+      name: "memory_search",
       arguments: { query: "E2E" },
     });
     const searchOut = JSON.parse((search.content as Array<{ text: string }>)[0]!.text);
     expect(searchOut.results.some((r: { id: string }) => r.id === writeOut.id)).toBe(true);
 
     const promote = await client.callTool({
-      name: "memory.promote",
+      name: "memory_promote",
       arguments: { id: writeOut.id },
     });
     const promoteOut = JSON.parse((promote.content as Array<{ text: string }>)[0]!.text);
     expect(promoteOut.to).toContain("/memory/decisions/");
 
     const ctx = await client.callTool({
-      name: "memory.context",
+      name: "memory_context",
       arguments: { project: "demo", max_tokens: 4000 },
     });
     const ctxOut = JSON.parse((ctx.content as Array<{ text: string }>)[0]!.text);

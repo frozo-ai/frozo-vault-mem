@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Phase 0 (vault scaffolding) and Phase 1 (TS MCP server with `memory.read`, `memory.write`, `memory.search`, `memory.promote`, plus `init`/`doctor`/`reindex`/`tail-audit` CLI subcommands) so Claude Code can read and write memories during a real session.
+**Goal:** Ship Phase 0 (vault scaffolding) and Phase 1 (TS MCP server with `memory_read`, `memory_write`, `memory_search`, `memory_promote`, plus `init`/`doctor`/`reindex`/`tail-audit` CLI subcommands) so Claude Code can read and write memories during a real session.
 
 **Architecture:** Monorepo with pnpm workspace. `vault-template/` is committed scaffolding that the `init` CLI materializes into a working vault. `packages/mcp/` is the Node 20 + TypeScript MCP server that uses Ajv (JSON Schema), better-sqlite3 (FTS5), chokidar (file watcher), proper-lockfile (advisory locks), and gray-matter (frontmatter). Stdio transport — no network surface in Phase 1.
 
@@ -2362,7 +2362,7 @@ git commit -m "test(mcp): add tmpVault helper for integration tests"
 
 ---
 
-### Task 18: `memory.write` tool
+### Task 18: `memory_write` tool
 
 **Files:**
 - Create: `packages/mcp/src/tools/write.ts`
@@ -2381,7 +2381,7 @@ import { Auditor } from "../../src/audit/index.js";
 import { openIndex } from "../../src/index/sqlite.js";
 import { vaultPaths } from "../../src/vault/paths.js";
 
-describe("memory.write", () => {
+describe("memory_write", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -2608,12 +2608,12 @@ Expected: 3 passing.
 
 ```bash
 git add packages/mcp/src/tools/write.ts packages/mcp/test/integration/write.test.ts
-git commit -m "feat(mcp): implement memory.write tool"
+git commit -m "feat(mcp): implement memory_write tool"
 ```
 
 ---
 
-### Task 19: `memory.read` tool
+### Task 19: `memory_read` tool
 
 **Files:**
 - Create: `packages/mcp/src/tools/read.ts`
@@ -2631,7 +2631,7 @@ import { Auditor } from "../../src/audit/index.js";
 import { openIndex } from "../../src/index/sqlite.js";
 import { vaultPaths } from "../../src/vault/paths.js";
 
-describe("memory.read", () => {
+describe("memory_read", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -2821,12 +2821,12 @@ Expected: 3 passing.
 
 ```bash
 git add packages/mcp/src/tools/read.ts packages/mcp/test/integration/read.test.ts
-git commit -m "feat(mcp): implement memory.read tool"
+git commit -m "feat(mcp): implement memory_read tool"
 ```
 
 ---
 
-### Task 20: `memory.search` tool
+### Task 20: `memory_search` tool
 
 **Files:**
 - Create: `packages/mcp/src/tools/search.ts`
@@ -2844,7 +2844,7 @@ import { Auditor } from "../../src/audit/index.js";
 import { openIndex } from "../../src/index/sqlite.js";
 import { vaultPaths } from "../../src/vault/paths.js";
 
-describe("memory.search", () => {
+describe("memory_search", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -2936,12 +2936,12 @@ Expected: 2 passing.
 
 ```bash
 git add packages/mcp/src/tools/search.ts packages/mcp/test/integration/search.test.ts
-git commit -m "feat(mcp): implement memory.search tool"
+git commit -m "feat(mcp): implement memory_search tool"
 ```
 
 ---
 
-### Task 21: `memory.promote` tool
+### Task 21: `memory_promote` tool
 
 **Files:**
 - Create: `packages/mcp/src/tools/promote.ts`
@@ -2960,7 +2960,7 @@ import { Auditor } from "../../src/audit/index.js";
 import { openIndex } from "../../src/index/sqlite.js";
 import { vaultPaths, MEMORY_TYPES } from "../../src/vault/paths.js";
 
-describe("memory.promote", () => {
+describe("memory_promote", () => {
   let v: TmpVault;
   beforeEach(() => {
     v = makeTmpVault();
@@ -3140,7 +3140,7 @@ Expected: 3 passing.
 
 ```bash
 git add packages/mcp/src/tools/promote.ts packages/mcp/test/integration/promote.test.ts
-git commit -m "feat(mcp): implement memory.promote tool"
+git commit -m "feat(mcp): implement memory_promote tool"
 ```
 
 ---
@@ -3572,7 +3572,7 @@ describe("MCP server (in-memory transport)", () => {
     await client.connect(b);
 
     const wrote = await client.callTool({
-      name: "memory.write",
+      name: "memory_write",
       arguments: {
         type: "decision",
         fields: { title: "E2E test", project: "demo" },
@@ -3584,21 +3584,21 @@ describe("MCP server (in-memory transport)", () => {
     expect(writeOut.id).toMatch(/^mem_/);
 
     const read = await client.callTool({
-      name: "memory.read",
+      name: "memory_read",
       arguments: { id: writeOut.id },
     });
     const readOut = JSON.parse((read.content as Array<{ text: string }>)[0]!.text);
     expect(readOut.frontmatter.title).toBe("E2E test");
 
     const search = await client.callTool({
-      name: "memory.search",
+      name: "memory_search",
       arguments: { query: "E2E" },
     });
     const searchOut = JSON.parse((search.content as Array<{ text: string }>)[0]!.text);
     expect(searchOut.results.some((r: { id: string }) => r.id === writeOut.id)).toBe(true);
 
     const promote = await client.callTool({
-      name: "memory.promote",
+      name: "memory_promote",
       arguments: { id: writeOut.id },
     });
     const promoteOut = JSON.parse((promote.content as Array<{ text: string }>)[0]!.text);
@@ -3644,7 +3644,7 @@ export interface BuiltServer {
 
 const TOOL_DEFS = [
   {
-    name: "memory.write",
+    name: "memory_write",
     description: "Create a new memory in the vault inbox.",
     inputSchema: {
       type: "object",
@@ -3658,7 +3658,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.read",
+    name: "memory_read",
     description: "Read a memory by id.",
     inputSchema: {
       type: "object",
@@ -3667,7 +3667,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.search",
+    name: "memory_search",
     description: "Full-text search the vault.",
     inputSchema: {
       type: "object",
@@ -3683,7 +3683,7 @@ const TOOL_DEFS = [
     },
   },
   {
-    name: "memory.promote",
+    name: "memory_promote",
     description: "Move a memory from inbox/ to memory/.",
     inputSchema: {
       type: "object",
@@ -3733,10 +3733,10 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
       let out: unknown;
       const a = (args ?? {}) as Record<string, unknown>;
       switch (name) {
-        case "memory.write":   out = await writeTool.handle(a as never); break;
-        case "memory.read":    out = await readTool.handle(a as never); break;
-        case "memory.search":  out = await searchTool.handle(a as never); break;
-        case "memory.promote": out = await promoteTool.handle(a as never); break;
+        case "memory_write":   out = await writeTool.handle(a as never); break;
+        case "memory_read":    out = await readTool.handle(a as never); break;
+        case "memory_search":  out = await searchTool.handle(a as never); break;
+        case "memory_promote": out = await promoteTool.handle(a as never); break;
         default: throw new ToolError("internal_error", `Unknown tool: ${name}`);
       }
       return { content: [{ type: "text" as const, text: JSON.stringify(out) }] };
@@ -4409,7 +4409,7 @@ Add to `~/.config/claude-code/mcp.json`:
 
 ## Tools
 
-- `memory.read` · `memory.write` · `memory.search` · `memory.promote`
+- `memory_read` · `memory_write` · `memory_search` · `memory_promote`
 
 ## CLI
 

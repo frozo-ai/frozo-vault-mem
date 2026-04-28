@@ -28,7 +28,7 @@ The vault itself lives at `~/vault-mem/` (outside this repo). This repo holds th
 
 The system is intentionally split into 4 separately-deployable processes. Don't merge them — each has a different language/runtime by design:
 
-1. **`vault-mem-mcp`** — MCP server (TypeScript, official MCP SDK). Local daemon on port 3947, exposes `memory.read/search/write/update/link/contradict/query/recent/context` tools. Localhost-only by default; bearer token if exposed via Tailscale.
+1. **`vault-mem-mcp`** — MCP server (TypeScript, official MCP SDK). Local daemon on port 3947, exposes `memory_read/search/write/update/link/contradict/query/recent/context` tools. Localhost-only by default; bearer token if exposed via Tailscale.
 2. **`vault-mem-keeper`** — Hygiene daemon (Python + `uv`). Runs every 30 min via launchd/cron. Inbox triage, dedupe, auto-link, contradiction detection, confidence decay, summarization, TTL expiry. Uses Claude Haiku for cheap reasoning, Sonnet for contradiction/summarization.
 3. **`vault-mem-gatekeeper`** — Telegram approval gate. Bring your own Telegram bot. Required for: merging memories, marking superseded, archiving recently-touched memories, resolving contradictions.
 4. **`vault-mem-index`** — Embedding index (LanceDB, file-based). Embeds with `all-MiniLM-L6-v2` via `sentence-transformers`. Re-indexes on file change via `chokidar`; full reindex weekly.

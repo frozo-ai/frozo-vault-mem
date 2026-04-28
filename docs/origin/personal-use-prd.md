@@ -153,15 +153,15 @@ A local MCP server that any agent (Claude Code, Cursor, Roo, custom) can connect
 
 | Tool | Purpose |
 |---|---|
-| `memory.read(id)` | Get one memory by id |
-| `memory.search(query, type?, project?, semantic=true)` | Find memories (FTS + embedding) |
-| `memory.write(type, fields, content)` | Create new memory; goes to `inbox/` first |
-| `memory.update(id, patch)` | Update existing memory |
-| `memory.link(from_id, to_id, relationship)` | Add a typed link between memories |
-| `memory.contradict(id_a, id_b, reasoning)` | Flag a contradiction for hygiene daemon |
-| `memory.query(dql)` | Run a Dataview query |
-| `memory.recent(project?, agent?, type?, n=20)` | Recent activity feed |
-| `memory.context(project, max_tokens)` | Get curated context for a project (uses summaries first) |
+| `memory_read(id)` | Get one memory by id |
+| `memory_search(query, type?, project?, semantic=true)` | Find memories (FTS + embedding) |
+| `memory_write(type, fields, content)` | Create new memory; goes to `inbox/` first |
+| `memory_update(id, patch)` | Update existing memory |
+| `memory_link(from_id, to_id, relationship)` | Add a typed link between memories |
+| `memory_contradict(id_a, id_b, reasoning)` | Flag a contradiction for hygiene daemon |
+| `memory_query(dql)` | Run a Dataview query |
+| `memory_recent(project?, agent?, type?, n=20)` | Recent activity feed |
+| `memory_context(project, max_tokens)` | Get curated context for a project (uses summaries first) |
 
 **Stack:** TypeScript, official MCP SDK, runs as local daemon on port 3947.
 
@@ -212,7 +212,7 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 ```
 1. You're in Claude Code working on myapp
 2. You agree to use SQLite FTS5 for search
-3. Claude Code calls memory.write("decision", {...}, content)
+3. Claude Code calls memory_write("decision", {...}, content)
 4. Write lands in inbox/ with confidence 0.7
 5. Hygiene daemon (next run): 
    - Embeds, finds 3 similar past memories
@@ -227,7 +227,7 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 
 ```
 1. "What did we decide about myapp search?"
-2. Claude Code calls memory.search("myapp search", type="decision")
+2. Claude Code calls memory_search("myapp search", type="decision")
 3. Gets the SQLite FTS5 decision with full context: rationale, alternatives, sources
 4. Also surfaces the superseded Postgres decision for context
 5. Responds with informed answer instead of inventing or asking again
@@ -237,8 +237,8 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 
 ```
 1. End-of-day, your background agent daemon runs
-2. Calls memory.recent(n=50) for the day
-3. Calls memory.write("summary", {...}, daily-digest-content)
+2. Calls memory_recent(n=50) for the day
+3. Calls memory_write("summary", {...}, daily-digest-content)
 4. Telegram digest sent to you
 5. You review in Obsidian whenever
 ```
@@ -288,15 +288,15 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 
 ### Phase 1: MCP server v0.1 (week 2)
 - Bootstrap TS project
-- Implement `memory.read`, `memory.write`, `memory.search` (FTS only, no embeddings yet)
+- Implement `memory_read`, `memory_write`, `memory_search` (FTS only, no embeddings yet)
 - Test with Claude Code locally
 - **Done when:** Claude Code can read and write memories during a real session
 
 ### Phase 2: Embedding index (week 3)
 - Add LanceDB
 - File watcher → re-embed on change
-- `memory.search` with semantic mode
-- `memory.context(project)` returns curated context
+- `memory_search` with semantic mode
+- `memory_context(project)` returns curated context
 - **Done when:** Semantic search finds relevant memories you didn't explicitly mention
 
 ### Phase 3: Hygiene daemon v0.1 (weeks 4–5)
