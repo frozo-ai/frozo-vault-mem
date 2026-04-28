@@ -56,13 +56,47 @@ export interface AuditContextOp {
   total_tokens: number;
 }
 
+export interface AuditDecayOp {
+  op: "decay";
+  agent: string;
+  session: string | null;
+  id: string;
+  from_confidence: number;
+  to_confidence: number;
+  delta: number;
+  periods: number;
+}
+
+export interface AuditArchiveOp {
+  op: "archive";
+  agent: string;
+  session: string | null;
+  id: string;
+  from: string;
+  to: string;
+  reasons: string[];
+}
+
+export interface AuditLinkRebuildOp {
+  op: "link_rebuild";
+  agent: string;
+  session: string | null;
+  count: number;
+  embed_model: string;
+}
+
+export interface AuditKeeperRunOp {
+  op: "keeper_run";
+  agent: string;
+  session: string | null;
+  duration_ms: number;
+  summary: Record<string, unknown>;
+}
+
 export type AuditEntry =
-  | AuditWriteOp
-  | AuditReadOp
-  | AuditSearchOp
-  | AuditPromoteOp
-  | AuditContextOp
-  | AuditFailedOp;
+  | AuditWriteOp | AuditReadOp | AuditSearchOp | AuditPromoteOp
+  | AuditContextOp | AuditFailedOp
+  | AuditDecayOp | AuditArchiveOp | AuditLinkRebuildOp | AuditKeeperRunOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}

@@ -38,6 +38,7 @@
     },
     "human_reviewed": { "type": "boolean" },
     "human_approved": { "type": ["boolean", "null"] },
-    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+$" }
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "last_decay_at": { "type": "string", "format": "date-time" }
   }
 }

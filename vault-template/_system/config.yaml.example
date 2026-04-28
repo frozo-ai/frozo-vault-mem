@@ -9,3 +9,31 @@ fts:
 
 audit:
   log_path: _system/audit.log
+
+keeper:
+  triage:
+    enabled: true
+    min_age_minutes: 1440
+    min_confidence: 0.7
+    promote_immediately_if_human_reviewed: true
+  link:
+    enabled: true
+    top_k: 5
+    min_similarity: 0.55
+    cross_type_allowed: true
+    rebuild_full_each_run: true
+  decay:
+    enabled: true
+    rates:
+      decision: null
+      observation: 30
+      learning: 60
+      todo: null
+      summary: null
+      entity: null
+      question: null
+    decay_amount_per_period: 0.05
+  archive:
+    enabled: true
+    archive_below_confidence: 0.3
+    respect_ttl_days: true

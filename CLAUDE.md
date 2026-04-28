@@ -112,3 +112,13 @@ These choices are deliberate — don't substitute without a reason:
 - `vault-template/` — the canonical scaffolding `init` copies from. Schemas, templates, and the sample memory live here. Edit only when adding/changing schema artifacts.
 - `packages/mcp/src/` — server source, organized by responsibility (`config/`, `schema/`, `vault/`, `id/`, `audit/`, `index/`, `tools/`, `cli/`, `server/`). Tests are co-located (`*.test.ts`) for unit work; integration and e2e tests live under `packages/mcp/test/`.
 - `_system/index.sqlite` (inside any materialized vault) — gitignored. Always rebuildable via `reindex`. The `.md` files are the source of truth.
+
+## Keeper (Python daemon, Phase 3)
+
+- **Run a keeper pass:** `cd packages/keeper && uv run python -m vault_mem_keeper run --vault ~/vault-mem`
+- **Dry-run:** `… --dry-run`
+- **Status (last keeper_run summary):** `… status --vault ~/vault-mem`
+- **Health check:** `… doctor --vault ~/vault-mem`
+- **Tests:** `cd packages/keeper && uv run pytest`
+- **Lint:** `cd packages/keeper && uv run ruff check src tests`
+- **Schedule via launchd:** see `packages/keeper/README.md` and `ops/keeper/com.vaultmem.keeper.plist`.
