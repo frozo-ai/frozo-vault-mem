@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>            <string>com.vaultmem.keeper</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/REPLACE_USER/.local/bin/uv</string>
+    <string>run</string>
+    <string>--directory</string>
+    <string>/Users/REPLACE_USER/path/to/frozo-vault-mem/packages/keeper</string>
+    <string>python</string>
+    <string>-m</string>
+    <string>vault_mem_keeper</string>
+    <string>run</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>VAULT_MEM_PATH</key> <string>/Users/REPLACE_USER/vault-mem</string>
+  </dict>
+  <key>StartInterval</key>    <integer>1800</integer>
+  <key>StandardErrorPath</key><string>/Users/REPLACE_USER/Library/Logs/vault-mem-keeper.err.log</string>
+  <key>StandardOutPath</key>  <string>/Users/REPLACE_USER/Library/Logs/vault-mem-keeper.out.log</string>
+  <key>RunAtLoad</key>        <false/>
+</dict>
+</plist>

@@ -26,3 +26,30 @@ uv run python -m vault_mem_keeper doctor --vault ~/vault-mem
 
 See `ops/keeper/com.vaultmem.keeper.plist` at the repo root. Customize the absolute
 paths and copy to `~/Library/LaunchAgents/`, then `launchctl load -w ...`.
+
+## Install via launchd (macOS)
+
+```bash
+# 1. Edit ops/keeper/com.vaultmem.keeper.plist — replace REPLACE_USER and paths
+# 2. Copy and load:
+cp ops/keeper/com.vaultmem.keeper.plist ~/Library/LaunchAgents/
+launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist
+# 3. Trigger an immediate run to verify:
+launchctl start com.vaultmem.keeper
+# 4. Check the log:
+tail -f ~/Library/Logs/vault-mem-keeper.err.log
+```
+
+To remove:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.vaultmem.keeper.plist
+rm ~/Library/LaunchAgents/com.vaultmem.keeper.plist
+```
+
+## Install via pm2
+
+```bash
+pm2 start ./bin/run-keeper.sh --cron-restart "*/30 * * * *" --no-autorestart \
+  --name vault-mem-keeper -- --vault $HOME/vault-mem
+```
