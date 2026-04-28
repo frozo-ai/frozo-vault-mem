@@ -1,0 +1,22 @@
+name: Question
+description: Ask a question about usage or design
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Pre-flight check
+      options:
+        - label: I read the [README](../../README.md), [INSTALL.md](../../docs/INSTALL.md), and [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
+          required: true
+        - label: I checked [TROUBLESHOOTING.md](../../docs/TROUBLESHOOTING.md)
+          required: true
+        - label: I searched [existing issues](../../issues?q=is%3Aissue) and [discussions](../../discussions)
+          required: true

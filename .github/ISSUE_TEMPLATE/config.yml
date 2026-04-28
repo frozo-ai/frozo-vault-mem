@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/frozo-ai/frozo-vault-mem/discussions
+    about: Broader discussions, ideas, or showcases. Issues should be actionable bug reports or feature requests.
+  - name: Security advisory
+    url: https://github.com/frozo-ai/frozo-vault-mem/security/advisories/new
+    about: Report security vulnerabilities privately.

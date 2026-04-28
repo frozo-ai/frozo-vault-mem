@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ts-mcp:
+    name: TypeScript (MCP server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @vault-mem/mcp build
+
+      - name: Typecheck
+        run: pnpm --filter @vault-mem/mcp typecheck
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-cache-${{ runner.os }}-Xenova-MiniLM-L6-v2
+
+      - name: Test
+        run: pnpm --filter @vault-mem/mcp test
+
+  py-keeper:
+    name: Python (keeper daemon)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.20"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        working-directory: packages/keeper
+        run: uv sync
+
+      - name: Lint (ruff)
+        working-directory: packages/keeper
+        run: uv run ruff check src tests
+
+      - name: Test (excluding e2e — needs combined Node+Python setup)
+        working-directory: packages/keeper
+        run: uv run pytest --ignore=tests/test_e2e.py
+
+  # Note: tests/test_e2e.py invokes the TS pnpm build via subprocess, which
+  # would require both Node and Python in the same job. The TS-side
+  # ts-mcp job above already exercises the full TS build path, and the
+  # py-keeper job covers all keeper unit + integration tests. Skipping
+  # the e2e test on CI is a deliberate trade-off; run it locally before
+  # cutting a release.
