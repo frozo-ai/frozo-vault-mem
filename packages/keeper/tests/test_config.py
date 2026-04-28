@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from vault_mem_keeper.config import KeeperConfig, load_keeper_config
+from vault_mem_keeper.config import load_keeper_config
 
 
 def test_loads_defaults_when_keeper_section_missing():
@@ -60,6 +60,5 @@ def test_loads_explicit_keeper_section():
 
 
 def test_raises_when_config_file_missing():
-    with tempfile.TemporaryDirectory() as d:
-        with pytest.raises(FileNotFoundError):
-            load_keeper_config(d)
+    with tempfile.TemporaryDirectory() as d, pytest.raises(FileNotFoundError):
+        load_keeper_config(d)

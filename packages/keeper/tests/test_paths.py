@@ -1,14 +1,6 @@
-import os
-from pathlib import Path
-
-import pytest
-
 from vault_mem_keeper.paths import (
     LOCATIONS,
     MEMORY_TYPES,
-    Location,
-    MemoryType,
-    VaultPaths,
     resolve_vault_path,
     vault_paths,
 )
@@ -49,9 +41,12 @@ def test_vault_paths_constructs_canonical_paths():
 def test_memory_file_paths():
     p = vault_paths("/vault")
     mid = "mem_2026-04-27_a8f3c0"
-    assert p.memory_file("decision", mid, "inbox") == "/vault/inbox/decisions/mem_2026-04-27_a8f3c0.md"
-    assert p.memory_file("decision", mid, "memory") == "/vault/memory/decisions/mem_2026-04-27_a8f3c0.md"
-    assert p.memory_file("decision", mid, "archive") == "/vault/archive/mem_2026-04-27_a8f3c0.md"
+    inbox_path = "/vault/inbox/decisions/mem_2026-04-27_a8f3c0.md"
+    memory_path = "/vault/memory/decisions/mem_2026-04-27_a8f3c0.md"
+    archive_path = "/vault/archive/mem_2026-04-27_a8f3c0.md"
+    assert p.memory_file("decision", mid, "inbox") == inbox_path
+    assert p.memory_file("decision", mid, "memory") == memory_path
+    assert p.memory_file("decision", mid, "archive") == archive_path
 
 
 def test_tmp_vault_fixture_exists(tmp_vault):

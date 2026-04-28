@@ -1,8 +1,4 @@
 import tempfile
-from pathlib import Path
-
-import pyarrow as pa
-import pytest
 
 import lancedb
 

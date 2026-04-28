@@ -31,10 +31,12 @@ def _seed(db_path: str) -> None:
          json.dumps([]), "frozo", "archived", "archive",
          "/v/archive/mem_2026-04-27_cccccc.md", "2026-04-27T14:32:00.000Z"),
     ]
-    db.executemany(
-        "INSERT INTO memories_fts (id,type,title,body,tags,project,status,location,path,updated) VALUES (?,?,?,?,?,?,?,?,?,?)",
-        rows,
+    insert_sql = (
+        "INSERT INTO memories_fts"
+        " (id,type,title,body,tags,project,status,location,path,updated)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)"
     )
+    db.executemany(insert_sql, rows)
     db.commit()
     db.close()
 

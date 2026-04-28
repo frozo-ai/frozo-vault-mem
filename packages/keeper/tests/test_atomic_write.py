@@ -1,7 +1,5 @@
-from pathlib import Path
 import tempfile
-
-import pytest
+from pathlib import Path
 
 from vault_mem_keeper.atomic_write import atomic_write
 

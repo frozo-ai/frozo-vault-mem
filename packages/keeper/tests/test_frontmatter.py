@@ -1,8 +1,5 @@
-import os
 import tempfile
 from pathlib import Path
-
-import pytest
 
 from vault_mem_keeper.frontmatter import (
     load_schemas,

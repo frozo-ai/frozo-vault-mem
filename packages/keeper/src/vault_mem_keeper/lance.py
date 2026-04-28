@@ -3,7 +3,8 @@
 The keeper does not write to Lance; the MCP server's watcher reconciles
 the index after keeper-induced file changes."""
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import lancedb
 
