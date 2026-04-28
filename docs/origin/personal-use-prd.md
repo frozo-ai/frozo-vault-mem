@@ -1,6 +1,6 @@
-# Vault-Mem — Personal Use PRD
+# Vault-Mem — Origin PRD
 
-**Owner:** Ashish
+**Owner:** the maintainer
 **Version:** 0.1 (personal scope)
 **Date:** 2026-04-27
 **Status:** Draft
@@ -8,19 +8,19 @@
 
 ---
 
-## 1. Why this exists (for me, specifically)
+## 1. Why this exists
 
-I run multiple agent stacks daily — Claude Code, Cursor, custom agents, Frozo Founder OS. Each has its own memory. Together they have:
+Running multiple agent stacks daily — Claude Code, Cursor, custom agents, and any other MCP-aware client — exposes a common structural problem. Each agent has its own memory. Together they have:
 
 - **No shared memory** — agents repeat questions, contradict each other, can't build on prior work
-- **No audit trail** — when an agent makes a decision, I can't see why, when, or based on what
+- **No audit trail** — when an agent makes a decision, there's no record of why, when, or based on what
 - **No human readability** — memory lives in opaque stores (Mem0, system prompts, JSON blobs)
-- **No portability** — if I switch from Claude Code to Cursor for a project, memory doesn't transfer
+- **No portability** — if you switch from Claude Code to Cursor for a project, memory doesn't transfer
 - **No coherence over time** — old beliefs accumulate; nothing reconciles or decays them
 
-I want one **Obsidian vault** that is simultaneously: my second brain, my agents' shared memory, and a permanent audit log of every decision I or my agents have made.
+The goal is one **Obsidian vault** that is simultaneously: your second brain, your agents' shared memory, and a permanent audit log of every decision you or your agents have made.
 
-This PRD is for a personal tool. **Not a product. Not a startup.** If it ships well and I use it for 6 months, then I revisit commercializing.
+This PRD is for a personal tool. **Not a product. Not a startup.** It started as a weekend project for the maintainer; now released for others to use and build on.
 
 ---
 
@@ -28,39 +28,38 @@ This PRD is for a personal tool. **Not a product. Not a startup.** If it ships w
 
 ### Goals
 
-1. Single Obsidian vault that all my agents read from and write to
+1. Single Obsidian vault that all agents read from and write to
 2. Structured agent writes (not freeform markdown dumps) via enforced frontmatter schema
-3. Background hygiene: dedupe, link, summarize, decay — without me babysitting it
+3. Background hygiene: dedupe, link, summarize, decay — without manual babysitting
 4. Full audit trail — every agent write is timestamped, sourced, signed
-5. Works on macOS (primary) and optionally Linux (Mac Mini server)
-6. Zero cloud dependency by default (privacy + DPDP + cost)
-7. Composable with my existing stack (Claude Code, Cursor, Notion, Telegram alerts)
+5. Works on macOS (primary) and optionally Linux
+6. Zero cloud dependency by default (privacy + cost)
+7. Composable with your existing stack (Claude Code, Cursor, Notion, Telegram alerts)
 
 ### Non-goals (explicit)
 
 - ❌ Multi-user collaboration
 - ❌ Hosted SaaS / sync layer
-- ❌ Public OSS release (yet)
 - ❌ Standards / spec evangelism
 - ❌ Enterprise features (SSO, audit exports, compliance certifications)
 - ❌ Mobile app
 - ❌ Pretty UI beyond Obsidian itself
 - ❌ Hardware integration (vault pendant is a separate future project)
 
-If I'm tempted to add any of the above before shipping v1.0, the answer is no.
+If tempted to add any of the above before shipping v1.0, the answer is no.
 
 ---
 
-## 3. Users (just me, but enumerated)
+## 3. Users (target operators)
 
 | Persona | Role | Use case |
 |---|---|---|
-| **Me — at desk** | Reader/writer of vault directly via Obsidian | Long-form thinking, PRDs, notes |
-| **Claude Code** | Agent reading/writing memory during coding sessions | "What did we decide about KinCare auth?" |
+| **You — at desk** | Reader/writer of vault directly via Obsidian | Long-form thinking, PRDs, notes |
+| **Claude Code** | Agent reading/writing memory during coding sessions | "What did we decide about myapp auth?" |
 | **Cursor** | Agent reading memory during edits | Same as Claude Code |
-| **Frozo Founder OS agents** | 9 background agents writing observations | Daily summaries, task status, decisions |
-| **Telegram-triggered agents** | Approval-gated agents | Write decisions only after my approval |
-| **Future me** | Reads vault months/years later | Find old decisions, see how thinking evolved |
+| **Your background agents** | Background agents writing observations | Daily summaries, task status, decisions |
+| **Telegram-triggered agents** | Approval-gated agents | Write decisions only after your approval |
+| **Future you** | Reads vault months/years later | Find old decisions, see how thinking evolved |
 
 ---
 
@@ -86,37 +85,37 @@ Every agent write is a markdown file with **enforced frontmatter schema**. The a
 ---
 id: mem_2026-04-27_a8f3
 type: decision  # one of the types above
-title: "Use Supabase for KinCare auth"
+title: "Use SQLite FTS5 for keyword search"
 agent: claude-code
 session: sess_abc123  # null if human
-created: 2026-04-27T14:32:00+05:30
-updated: 2026-04-27T14:32:00+05:30
+created: 2026-04-27T14:32:00+00:00
+updated: 2026-04-27T14:32:00+00:00
 confidence: 0.85  # 0..1
 sources:  # what evidence backs this
   - "[[meeting-2026-04-25]]"
   - "[[code-review-pr-142]]"
 contradicts: []  # ids of memories this conflicts with
 supersedes: []   # ids this replaces
-tags: [kincare, auth, architecture]
-project: kincare
+tags: [storage, search, architecture]
+project: myapp
 ttl_days: null  # null = permanent
 status: active  # active | archived | superseded
 human_reviewed: false
 human_approved: null  # null | true | false
 ---
 
-# Use Supabase for KinCare auth
+# Use SQLite FTS5 for keyword search
 
 ## Rationale
 ...
 
 ## Considered alternatives
-- Clerk: rejected because ...
-- Auth0: rejected because ...
+- Postgres FTS: rejected because ...
+- Elasticsearch: rejected because ...
 
 ## Constraints
-- DPDP compliance required
-- Family member multi-tenancy
+- Single-user, local-first
+- Zero-server overhead
 ```
 
 ### Vault folder structure
@@ -166,7 +165,7 @@ A local MCP server that any agent (Claude Code, Cursor, Roo, custom) can connect
 
 **Stack:** TypeScript, official MCP SDK, runs as local daemon on port 3947.
 
-**Auth:** Localhost-only by default. Bearer token if exposed beyond localhost (for Mac Mini / Tailscale).
+**Auth:** Localhost-only by default. Bearer token if exposed beyond localhost (for a macOS host / Tailscale).
 
 ### 5.2 Hygiene daemon (`vault-mem-keeper`)
 
@@ -184,23 +183,23 @@ Background process that maintains vault coherence. Runs every 30 min via launchd
 
 **Stack:** Python, uv-managed, uses Claude Haiku via API for cheap reasoning. Heavy lifting (contradiction detection, summarization) uses Claude Sonnet.
 
-**Cost budget:** ₹500–1,000/month in API spend at my usage volume (estimated ~50 agent writes/day).
+**Cost:** Low API cost since most processing is local; minimal monthly spend on Claude Haiku/Sonnet calls. If you enable Phase 5 summarization, budget roughly $10/month at ~50 agent writes/day.
 
 ### 5.3 Telegram approval gate (`vault-mem-gatekeeper`)
 
-For high-stakes writes, hygiene daemon pings my Telegram bot for approval before:
+For high-stakes writes, hygiene daemon pings a Telegram bot for approval before:
 - Merging two memories
 - Marking a decision as superseded
-- Archiving a memory I touched recently
+- Archiving a memory touched recently
 - Resolving a contradiction
 
-I tap ✅ or ❌ in Telegram. Reuses existing Frozo Founder OS Telegram approval infrastructure.
+Tap ✅ or ❌ in Telegram. Wire up your own Telegram bot — instructions in the keeper README.
 
 ### 5.4 Embedding index (`vault-mem-index`)
 
 Local vector store for semantic search.
 
-**Stack:** LanceDB (local, file-based, zero-config). Embeds with `all-MiniLM-L6-v2` (fast, 384-dim, runs on Mac Mini CPU).
+**Stack:** LanceDB (local, file-based, zero-config). Embeds with `all-MiniLM-L6-v2` (fast, 384-dim, runs on macOS host CPU).
 
 Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 
@@ -211,37 +210,37 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 ### Flow A: Claude Code writes a decision
 
 ```
-1. I'm in Claude Code working on KinCare
-2. We agree to use Supabase for auth
+1. You're in Claude Code working on myapp
+2. You agree to use SQLite FTS5 for search
 3. Claude Code calls memory.write("decision", {...}, content)
 4. Write lands in inbox/ with confidence 0.7
 5. Hygiene daemon (next run): 
    - Embeds, finds 3 similar past memories
-   - One contradicts (March: "use Clerk")
+   - One contradicts (earlier: "use Postgres FTS")
    - Pings Telegram: "New decision contradicts mem_2026-03-15. Auto-supersede?"
-6. I tap ✅
+6. You tap ✅
 7. Old memory marked supersedes_by, new memory promoted to memory/decisions/
 8. Linked, indexed, audit log updated
 ```
 
-### Flow B: I ask Claude Code about KinCare auth a month later
+### Flow B: You ask Claude Code about myapp search a month later
 
 ```
-1. "What did we decide about KinCare auth?"
-2. Claude Code calls memory.search("kincare auth", type="decision")
-3. Gets the Supabase decision with full context: rationale, alternatives, sources
-4. Also surfaces the superseded Clerk decision for context
+1. "What did we decide about myapp search?"
+2. Claude Code calls memory.search("myapp search", type="decision")
+3. Gets the SQLite FTS5 decision with full context: rationale, alternatives, sources
+4. Also surfaces the superseded Postgres decision for context
 5. Responds with informed answer instead of inventing or asking again
 ```
 
-### Flow C: Frozo Founder OS daily digest
+### Flow C: Background agent daily digest
 
 ```
-1. End-of-day, Frozo Founder OS daemon runs
+1. End-of-day, your background agent daemon runs
 2. Calls memory.recent(n=50) for the day
 3. Calls memory.write("summary", {...}, daily-digest-content)
-4. Telegram digest sent to me
-5. I review in Obsidian whenever
+4. Telegram digest sent to you
+5. You review in Obsidian whenever
 ```
 
 ### Flow D: Contradiction surfaces unprompted
@@ -250,8 +249,8 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 1. Two agents wrote conflicting things about Supabase pricing 2 weeks apart
 2. Weekly hygiene scan flags
 3. Telegram: "Contradiction in observations: mem_x says $25/mo, mem_y says $0 (free tier). Resolve?"
-4. I tap "investigate" → Claude Code session opens with both memories preloaded
-5. We resolve, write a new decision that supersedes both observations
+4. You tap "investigate" → Claude Code session opens with both memories preloaded
+5. You resolve, write a new decision that supersedes both observations
 ```
 
 ---
@@ -267,13 +266,13 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 | LLM (smart) | Claude Sonnet via API | Contradiction reasoning, summaries |
 | Embeddings | `all-MiniLM-L6-v2` via `sentence-transformers` | Local, fast, free |
 | Vector store | LanceDB | Local, file-based, no server |
-| Process mgmt | pm2 (already running) | Reuse existing infra |
-| Approval | Telegram bot (existing) | Reuse Frozo Founder OS bot |
+| Process mgmt | pm2 if you already use it; alternative to launchd | Reuse existing infra |
+| Approval | Telegram bot | Bring your own bot |
 | File watcher | chokidar (TS) / watchdog (Py) | Standard |
-| Hosting | Mac Mini (existing) + Tailscale | No new infra |
+| Hosting | Your Mac/Linux box + Tailscale | No new infra |
 | Logging | Pino (TS) + structlog (Py) → file | Audit trail |
 
-**Total new infra:** Zero. Total monthly cost: API calls only (~₹500–1,000).
+**Total new infra:** Zero. Monthly cost: API calls only (~$10/month at moderate usage, or near-zero if Phase 5 is disabled).
 
 ---
 
@@ -285,7 +284,7 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 - Write markdown templates
 - Initialize as Obsidian vault + git repo
 - Set up audit log file
-- **Done when:** I can manually create a memory file that validates against schema
+- **Done when:** You can manually create a memory file that validates against schema
 
 ### Phase 1: MCP server v0.1 (week 2)
 - Bootstrap TS project
@@ -298,7 +297,7 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 - File watcher → re-embed on change
 - `memory.search` with semantic mode
 - `memory.context(project)` returns curated context
-- **Done when:** Semantic search finds relevant memories I didn't explicitly mention
+- **Done when:** Semantic search finds relevant memories you didn't explicitly mention
 
 ### Phase 3: Hygiene daemon v0.1 (weeks 4–5)
 - Python daemon, runs every 30 min
@@ -306,43 +305,43 @@ Re-indexes on file change via `chokidar` watcher. Full reindex weekly.
 - Auto-linking via embedding similarity
 - Confidence decay
 - Audit log writes
-- **Done when:** Vault stays coherent without my intervention for 2 weeks
+- **Done when:** Vault stays coherent without intervention for 2 weeks
 
 ### Phase 4: Telegram approval gate (week 6)
-- Reuse Frozo Founder OS Telegram bot
+- Wire up a Telegram bot
 - Approval flow for merges, supersedes, contradictions
-- **Done when:** I can approve/reject from phone, daemon respects choice
+- **Done when:** You can approve/reject from phone, daemon respects choice
 
 ### Phase 5: Contradiction engine + summarization (weeks 7–8)
 - Sonnet-powered contradiction detection
 - Daily/weekly/monthly project summaries
 - Belief decay tuning
-- **Done when:** Daemon surfaces a real contradiction unprompted that I'd have missed
+- **Done when:** Daemon surfaces a real contradiction unprompted that you'd have missed
 
 ### Phase 6: Polish (weeks 9–10)
 - Dataview queries for vault dashboards
 - Obsidian plugin (optional) for in-app memory creation
 - Performance tuning
-- Documentation for future-me
-- **Done when:** I haven't manually maintained the vault in 30 days and it's still good
+- Documentation
+- **Done when:** You haven't manually maintained the vault in 30 days and it's still good
 
 **Total:** ~10 weeks part-time, ~30 hrs total. Most weekends + 1–2 hrs/weekday.
 
 ---
 
-## 9. Success criteria (for me)
+## 9. Success criteria
 
 After 90 days of use, this is a success if:
 
-1. ✅ I stop pasting context into Claude Code/Cursor — agents pull it themselves
-2. ✅ My agents stop contradicting each other on project decisions
-3. ✅ I can answer "why did we decide X?" 6 months later with full provenance
-4. ✅ I find at least 3 contradictions or stale beliefs I'd have missed
+1. ✅ You stop pasting context into Claude Code/Cursor — agents pull it themselves
+2. ✅ Your agents stop contradicting each other on project decisions
+3. ✅ You can answer "why did we decide X?" 6 months later with full provenance
+4. ✅ You find at least 3 contradictions or stale beliefs you'd have missed
 5. ✅ Vault doesn't degrade — daemon keeps it coherent without manual intervention
-6. ✅ Total monthly cost < ₹2,000
+6. ✅ Total monthly cost stays low (< $20/month)
 7. ✅ At least one agent workflow becomes meaningfully better (measure: subjective, but real)
 
-If 5+/7 met → keep using, consider open-sourcing.
+If 5+/7 met → keep using, consider extending.
 If 3–4 → adjust and rerun for 60 more days.
 If <3 → kill it; lessons go into next bet.
 
@@ -351,12 +350,12 @@ If <3 → kill it; lessons go into next bet.
 ## 10. Risks (top 3)
 
 1. **Daemon brittleness** — auto-merging or auto-archiving introduces errors that cascade. Mitigation: Telegram approval gate for all destructive ops in v0.1; relax only after 60 days of clean operation.
-2. **Schema thrashing** — I'll want to change schemas as I learn. Mitigation: version schemas; write migrations as needed; never edit historical memories' schemas in place.
-3. **Sunk-cost bias** — I'll want to over-engineer (multi-user, hosted, plugins) before validating personal-use value. Mitigation: this PRD is the contract. Anything outside scope goes in `vault-mem-v2-ideas.md` and stays there for 90 days minimum.
+2. **Schema thrashing** — you'll want to change schemas as you learn. Mitigation: version schemas; write migrations as needed; never edit historical memories' schemas in place.
+3. **Sunk-cost bias** — temptation to over-engineer (multi-user, hosted, plugins) before validating personal-use value. Mitigation: this PRD is the contract. Anything outside scope goes in `vault-mem-v2-ideas.md` and stays there for 90 days minimum.
 
 ---
 
-## 11. What I'm explicitly *not* building (yet)
+## 11. What's explicitly *not* in v1.0
 
 Park these in a separate "future" doc; do not start until v1.0 is in steady use:
 
@@ -388,11 +387,11 @@ Park these in a separate "future" doc; do not start until v1.0 is in steady use:
 - [ ] Create `~/vault-mem/` with folder structure
 - [ ] `git init` + private GitHub repo
 - [ ] Open in Obsidian, install: Dataview, Templater, Tasks, Git
-- [ ] Write README.md describing intent (so future-me remembers)
+- [ ] Write README.md describing intent
 - [ ] Define `_system/schema/decision.json` (start with this one type)
 - [ ] Create one manual decision memory by hand to validate the format
 - [ ] Set up daily git commit cron
-- [ ] Block 4 hrs next Saturday for Phase 1 MCP server bootstrap
+- [ ] Block 4 hrs for Phase 1 MCP server bootstrap
 
 ---
 

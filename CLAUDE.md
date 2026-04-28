@@ -8,14 +8,14 @@ Phase 0 (vault scaffolding) and Phase 1 (MCP server v0.1) are implemented on `fe
 
 - `vault-template/` — bundled scaffolding the `init` CLI copies to a working vault
 - `packages/mcp/` — the `@vault-mem/mcp` workspace package (Node 20 + TypeScript ESM)
-- `vault-mem-prd.md` — original PRD (treat as contract)
+- `docs/origin/personal-use-prd.md` — origin PRD (treat as contract)
 - `docs/superpowers/specs/` and `docs/superpowers/plans/` — design and implementation history
 
 See "Running and developing" below for build/test/run commands.
 
 ## What Vault-Mem is
 
-A **personal-use, local-first** shared memory layer for the owner's agent stack (Claude Code, Cursor, Frozo Founder OS). Every agent write becomes a typed markdown file in an Obsidian vault with enforced YAML frontmatter, providing:
+A **personal-use, local-first** shared memory layer for any MCP-aware agent stack (Claude Code, Cursor, custom agents). Every agent write becomes a typed markdown file in an Obsidian vault with enforced YAML frontmatter, providing:
 
 - Shared memory across agents
 - Human-readable audit trail (plain `.md` files, git-tracked)
@@ -30,7 +30,7 @@ The system is intentionally split into 4 separately-deployable processes. Don't 
 
 1. **`vault-mem-mcp`** — MCP server (TypeScript, official MCP SDK). Local daemon on port 3947, exposes `memory.read/search/write/update/link/contradict/query/recent/context` tools. Localhost-only by default; bearer token if exposed via Tailscale.
 2. **`vault-mem-keeper`** — Hygiene daemon (Python + `uv`). Runs every 30 min via launchd/cron. Inbox triage, dedupe, auto-link, contradiction detection, confidence decay, summarization, TTL expiry. Uses Claude Haiku for cheap reasoning, Sonnet for contradiction/summarization.
-3. **`vault-mem-gatekeeper`** — Telegram approval gate. Reuses the existing Frozo Founder OS Telegram bot. Required for: merging memories, marking superseded, archiving recently-touched memories, resolving contradictions.
+3. **`vault-mem-gatekeeper`** — Telegram approval gate. Bring your own Telegram bot. Required for: merging memories, marking superseded, archiving recently-touched memories, resolving contradictions.
 4. **`vault-mem-index`** — Embedding index (LanceDB, file-based). Embeds with `all-MiniLM-L6-v2` via `sentence-transformers`. Re-indexes on file change via `chokidar`; full reindex weekly.
 
 ## Vault structure (the data model is the architecture)
@@ -83,15 +83,15 @@ These choices are deliberate — don't substitute without a reason:
 - **TypeScript** for the MCP server (native MCP SDK ecosystem)
 - **Python + `uv`** for the hygiene daemon (LLM ecosystem)
 - **LanceDB** for vectors (file-based, zero server)
-- **`all-MiniLM-L6-v2`** embeddings (local, free, fits Mac Mini CPU)
+- **`all-MiniLM-L6-v2`** embeddings (local, free, fits macOS host CPU)
 - **Claude Haiku** for triage/classification, **Claude Sonnet** for contradiction/summary reasoning
-- **pm2** for process management (already running on the Mac Mini)
+- **pm2** for process management if you already use it; alternative to launchd
 - **Pino** (TS) / **structlog** (Py) → file-based audit log
 
 ## Operating context
 
-- **Primary host:** owner's Mac Mini (already running pm2, Tailscale, Frozo Founder OS Telegram bot — reuse, don't reinstall)
-- **Cost ceiling:** API spend should stay ~₹500–1,000/month at ~50 agent writes/day. Anything that could blow this needs a flag.
+- **Primary host:** your Mac/Linux box (macOS host running Tailscale; reuse existing infra, don't add new)
+- **Cost ceiling:** API spend should stay low (~$10/month at ~50 agent writes/day with Phase 5 enabled; near-zero without). Anything that could blow this needs a flag.
 - **Backup:** daily git commit + push to private GitHub; weekly full backup to external drive.
 - **Privacy:** zero cloud dependency by default (DPDP compliance is a stated goal). Don't introduce hosted services without an explicit ask.
 

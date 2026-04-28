@@ -11,7 +11,7 @@ const sample = (over: Partial<LanceRow> = {}): LanceRow => ({
   vector: new Float32Array(EMBED_DIM).fill(0.05),
   type: "decision",
   title: "Use Supabase for auth",
-  project: "kincare",
+  project: "myapp",
   tags: ["auth"],
   status: "active",
   location: "memory",
@@ -58,13 +58,13 @@ describe("openLance", () => {
     const lance = await openLance(dir);
     const e = createMockEmbedder();
     const qvec = await e.embed("query");
-    await lance.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "kincare" }));
-    await lance.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "kincare" }));
-    await lance.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "frozo" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "myapp" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "myapp" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "otherapp" }));
 
     expect((await lance.search(qvec, { type: "decision" }, 10)).results).toHaveLength(2);
-    expect((await lance.search(qvec, { project: "kincare" }, 10)).results).toHaveLength(2);
-    expect((await lance.search(qvec, { type: "decision", project: "kincare" }, 10)).results).toHaveLength(1);
+    expect((await lance.search(qvec, { project: "myapp" }, 10)).results).toHaveLength(2);
+    expect((await lance.search(qvec, { type: "decision", project: "myapp" }, 10)).results).toHaveLength(1);
     await lance.close();
   });
 

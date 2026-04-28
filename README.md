@@ -1,6 +1,6 @@
 # Vault-Mem
 
-Personal-use, local-first shared memory layer for an agent stack (Claude Code, Cursor, Frozo Founder OS). See [`vault-mem-prd.md`](vault-mem-prd.md) for context and [`docs/superpowers/specs/`](docs/superpowers/specs/) for current designs.
+Personal-use, local-first shared memory layer for any MCP-aware agent stack (Claude Code, Cursor, custom agents). See [`docs/origin/personal-use-prd.md`](docs/origin/personal-use-prd.md) for origin context and [`docs/superpowers/specs/`](docs/superpowers/specs/) for current designs.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ Add to `~/.config/claude-code/mcp.json`:
   "mcpServers": {
     "vault-mem": {
       "command": "node",
-      "args": ["/absolute/path/to/frozo-vault-mem/packages/mcp/bin/vault-mem-mcp"],
+      "args": ["/absolute/path/to/vault-mem/packages/mcp/bin/vault-mem-mcp"],
       "env": { "VAULT_MEM_PATH": "/Users/<you>/vault-mem" }
     }
   }

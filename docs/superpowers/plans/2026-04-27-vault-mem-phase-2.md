@@ -175,7 +175,7 @@ describe("createMockEmbedder", () => {
 describe("createTransformersEmbedder (real model, slow first run)", () => {
   it("produces 384-dim L2-normalized Float32Array", { timeout: 30_000 }, async () => {
     const e = createTransformersEmbedder();
-    const v = await e.embed("Use Supabase for KinCare auth");
+    const v = await e.embed("Use SQLite FTS5 for keyword search");
     expect(v).toBeInstanceOf(Float32Array);
     expect(v.length).toBe(EMBED_DIM);
     let sumSq = 0;
@@ -337,7 +337,7 @@ const sample = (over: Partial<LanceRow> = {}): LanceRow => ({
   vector: new Float32Array(EMBED_DIM).fill(0.05),
   type: "decision",
   title: "Use Supabase for auth",
-  project: "kincare",
+  project: "myapp",
   tags: ["auth"],
   status: "active",
   location: "memory",
@@ -384,13 +384,13 @@ describe("openLance", () => {
     const lance = await openLance(dir);
     const e = createMockEmbedder();
     const qvec = await e.embed("query");
-    await lance.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "kincare" }));
-    await lance.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "kincare" }));
-    await lance.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "frozo" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "myapp" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "myapp" }));
+    await lance.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "otherapp" }));
 
     expect((await lance.search(qvec, { type: "decision" }, 10)).results).toHaveLength(2);
-    expect((await lance.search(qvec, { project: "kincare" }, 10)).results).toHaveLength(2);
-    expect((await lance.search(qvec, { type: "decision", project: "kincare" }, 10)).results).toHaveLength(1);
+    expect((await lance.search(qvec, { project: "myapp" }, 10)).results).toHaveLength(2);
+    expect((await lance.search(qvec, { type: "decision", project: "myapp" }, 10)).results).toHaveLength(1);
     await lance.close();
   });
 
@@ -852,7 +852,7 @@ Append the test (do not remove existing tests):
       op: "context",
       agent: "claude-code",
       session: "01H",
-      project: "kincare",
+      project: "myapp",
       max_tokens: 4000,
       query: "auth decisions",
       result_count: 3,
@@ -862,7 +862,7 @@ Append the test (do not remove existing tests):
       op: "context",
       agent: "claude-code",
       session: "01H",
-      project: "kincare",
+      project: "myapp",
       max_tokens: 4000,
       result_count: 5,
       total_tokens: 1200,
@@ -872,7 +872,7 @@ Append the test (do not remove existing tests):
     const noQuery = JSON.parse(lines[1]!);
     expect(withQuery.query).toBeUndefined();
     expect(withQuery.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(withQuery.project).toBe("kincare");
+    expect(withQuery.project).toBe("myapp");
     expect(noQuery.query).toBeUndefined();
     expect(noQuery.query_hash).toBeUndefined();
     expect(noQuery.total_tokens).toBe(1200);
@@ -1630,14 +1630,14 @@ Append to the existing `describe("openIndex (in-memory)", ...)` block:
 ```ts
   it("list returns all rows matching filters without MATCH", () => {
     const idx = openIndex(":memory:");
-    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "kincare" }));
-    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "kincare" }));
-    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "frozo" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "myapp" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "myapp" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "otherapp" }));
 
     expect(idx.list({}).length).toBe(3);
     expect(idx.list({ type: "decision" }).length).toBe(2);
-    expect(idx.list({ project: "kincare" }).length).toBe(2);
-    expect(idx.list({ type: "decision", project: "kincare" }).length).toBe(1);
+    expect(idx.list({ project: "myapp" }).length).toBe(2);
+    expect(idx.list({ type: "decision", project: "myapp" }).length).toBe(1);
   });
 ```
 
@@ -1687,7 +1687,7 @@ describe("memory.context", () => {
 
     const sum = await write.handle({
       type: "summary",
-      fields: { title: "Daily summary 2026-04-27", project: "kincare", period: "daily", covers: [] },
+      fields: { title: "Daily summary 2026-04-27", project: "myapp", period: "daily", covers: [] },
       content: "rolled-up daily notes",
       agent: "human",
     });
@@ -1696,14 +1696,14 @@ describe("memory.context", () => {
     for (let i = 0; i < 3; i++) {
       const w = await write.handle({
         type: "decision",
-        fields: { title: `Decision ${i}`, project: "kincare" },
+        fields: { title: `Decision ${i}`, project: "myapp" },
         content: `decision body ${i}`,
         agent: "human",
       });
       await promote.handle({ id: w.id });
     }
 
-    const r = await context.handle({ project: "kincare", max_tokens: 2000 });
+    const r = await context.handle({ project: "myapp", max_tokens: 2000 });
     expect(r.items.length).toBeGreaterThan(0);
     expect(r.items[0]!.bucket).toBe("summary");
     expect(r.total_tokens).toBeLessThanOrEqual(2000);
@@ -1717,7 +1717,7 @@ describe("memory.context", () => {
     for (let i = 0; i < 6; i++) {
       const w = await write.handle({
         type: "decision",
-        fields: { title: `Decision ${i}`, project: "kincare" },
+        fields: { title: `Decision ${i}`, project: "myapp" },
         content: `xxxxxxxxxx ${i}`.padEnd(200, "x"),
         agent: "human",
       });
@@ -1725,7 +1725,7 @@ describe("memory.context", () => {
     }
 
     // Generous enough for one decision (~50–60 tokens), tight enough to truncate the rest
-    const r = await context.handle({ project: "kincare", max_tokens: 80 });
+    const r = await context.handle({ project: "myapp", max_tokens: 80 });
     expect(r.items.length).toBeGreaterThanOrEqual(1);
     expect(r.total_tokens).toBeLessThanOrEqual(80);
     expect(r.truncated).toBeGreaterThan(0);
@@ -1737,11 +1737,11 @@ describe("memory.context", () => {
     const { write, promote, context, lanceDir } = await setup();
 
     // Write three project decisions; the mock embedder makes identical-text matches rank highest
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "auth choices", project: "kincare" }, content: "auth", agent: "human" })).id });
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "payments", project: "kincare" }, content: "payments", agent: "human" })).id });
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "ops", project: "kincare" }, content: "ops", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "auth choices", project: "myapp" }, content: "auth", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "payments", project: "myapp" }, content: "payments", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "ops", project: "myapp" }, content: "ops", agent: "human" })).id });
 
-    const r = await context.handle({ project: "kincare", max_tokens: 4000, query: "auth" });
+    const r = await context.handle({ project: "myapp", max_tokens: 4000, query: "auth" });
     expect(r.items.length).toBeGreaterThan(0);
     // the auth decision (whose body is exactly "auth") should rank first under the mock embedder
     expect(r.items[0]!.title).toBe("auth choices");

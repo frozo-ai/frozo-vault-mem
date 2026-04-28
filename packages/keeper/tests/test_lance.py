@@ -16,7 +16,7 @@ def _seed_lance(dir_path: str) -> None:
             "vector": [0.05] * EMBED_DIM,
             "type": "decision",
             "title": title,
-            "project": "kincare",
+            "project": "myapp",
             "tags": ["auth"],
             "status": "active",
             "location": "memory",

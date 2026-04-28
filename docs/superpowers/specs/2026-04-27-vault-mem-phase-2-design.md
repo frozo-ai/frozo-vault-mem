@@ -2,7 +2,7 @@
 
 **Status:** Draft for implementation
 **Date:** 2026-04-27
-**Owner:** Ashish
+**Owner:** the maintainer
 **PRD:** [`vault-mem-prd.md`](../../../vault-mem-prd.md) §8 Phase 2
 **Phase 1 spec:** [`2026-04-27-vault-mem-mcp-design.md`](2026-04-27-vault-mem-mcp-design.md)
 **Branch base:** `main` (post Phase 1 merge `e35cfb5`)

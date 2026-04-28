@@ -70,10 +70,10 @@ describe("memory.read", () => {
     idx.upsert({
       id: "mem_2026-04-27_000001",
       type: "decision",
-      title: "Use Supabase for KinCare auth",
+      title: "Use SQLite FTS5 for the keyword index",
       body: "",
-      tags: ["kincare", "auth", "architecture"],
-      project: "kincare",
+      tags: ["storage", "search", "architecture"],
+      project: "vault-mem",
       status: "active",
       location: "memory",
       path: samplePath,
@@ -86,7 +86,7 @@ describe("memory.read", () => {
       index: idx,
     });
     const result = await read.handle({ id: "mem_2026-04-27_000001" });
-    expect(result.frontmatter.title).toBe("Use Supabase for KinCare auth");
+    expect(result.frontmatter.title).toBe("Use SQLite FTS5 for the keyword index");
     expect(result.location).toBe("memory");
   });
 });

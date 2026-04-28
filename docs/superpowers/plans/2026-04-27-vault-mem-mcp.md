@@ -74,7 +74,7 @@
 
 ```json
 {
-  "name": "frozo-vault-mem",
+  "name": "vault-mem",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -301,7 +301,7 @@ _system/index.sqlite-shm
 ```markdown
 # Vault-Mem
 
-Personal memory vault for Ashish's agent stack. See the project repo's [`vault-mem-prd.md`](https://github.com/ashishdhiman/frozo-vault-mem/blob/main/vault-mem-prd.md) for context.
+A local-first shared memory layer for any MCP-aware agent stack. See the project repo's [`docs/origin/personal-use-prd.md`](docs/origin/personal-use-prd.md) for context.
 
 ## Layout
 
@@ -429,7 +429,7 @@ describe("_common.json schema", () => {
     const ok = validate({
       id: "mem_2026-04-27_a8f3c0",
       type: "decision",
-      title: "Use Supabase for KinCare auth",
+      title: "Use SQLite FTS5 for keyword search",
       agent: "claude-code",
       session: "01HXABCDEFGHJKMNPQRSTVWXYZ",
       created: "2026-04-27T14:32:00.000Z",
@@ -956,7 +956,7 @@ audit:
 ---
 id: mem_2026-04-27_000001
 type: decision
-title: "Use Supabase for KinCare auth"
+title: "Use SQLite FTS5 for keyword search"
 agent: human
 session: null
 created: "2026-04-27T14:32:00.000Z"
@@ -967,8 +967,8 @@ sources:
   - "[[code-review-pr-142]]"
 contradicts: []
 supersedes: []
-tags: [kincare, auth, architecture]
-project: kincare
+tags: [myapp, search, architecture]
+project: myapp
 ttl_days: null
 status: active
 human_reviewed: true
@@ -976,7 +976,7 @@ human_approved: true
 schema_version: "0.1"
 ---
 
-# Use Supabase for KinCare auth
+# Use SQLite FTS5 for keyword search
 
 ## Rationale
 
@@ -1744,7 +1744,7 @@ describe("Auditor", () => {
 
   it("hashes search queries instead of storing them raw", () => {
     const a = new Auditor(logPath);
-    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4 });
+    a.write({ op: "search", agent: "claude-code", session: "01H", query: "myapp auth", result_count: 4 });
     const line = JSON.parse(readFileSync(logPath, "utf8").trim());
     expect(line.query).toBeUndefined();
     expect(line.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -2037,8 +2037,8 @@ const sample = (over: Partial<IndexRow> = {}): IndexRow => ({
   type: "decision",
   title: "Use Supabase for auth",
   body: "Supabase has DPDP-compatible hosting and RLS.",
-  tags: ["kincare", "auth"],
-  project: "kincare",
+  tags: ["myapp", "auth"],
+  project: "myapp",
   status: "active",
   location: "memory",
   path: "/v/memory/decisions/mem_2026-04-27_aaaaaa.md",
@@ -2069,13 +2069,13 @@ describe("openIndex (in-memory)", () => {
 
   it("filters by type, project, status, location", () => {
     const idx = openIndex(":memory:");
-    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "kincare" }));
-    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "kincare" }));
-    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "frozo" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", type: "decision", project: "myapp" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", type: "observation", project: "myapp" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", type: "decision", project: "otherapp" }));
 
     expect(idx.search({ query: "supabase", type: "decision", limit: 10 }).results).toHaveLength(2);
-    expect(idx.search({ query: "supabase", project: "kincare", limit: 10 }).results).toHaveLength(2);
-    expect(idx.search({ query: "supabase", type: "decision", project: "kincare", limit: 10 }).results).toHaveLength(1);
+    expect(idx.search({ query: "supabase", project: "myapp", limit: 10 }).results).toHaveLength(2);
+    expect(idx.search({ query: "supabase", type: "decision", project: "myapp", limit: 10 }).results).toHaveLength(1);
   });
 
   it("delete removes a row", () => {
@@ -2681,10 +2681,10 @@ describe("memory.read", () => {
     idx.upsert({
       id: "mem_2026-04-27_000001",
       type: "decision",
-      title: "Use Supabase for KinCare auth",
+      title: "Use SQLite FTS5 for keyword search",
       body: "",
-      tags: ["kincare", "auth", "architecture"],
-      project: "kincare",
+      tags: ["myapp", "search", "architecture"],
+      project: "myapp",
       status: "active",
       location: "memory",
       path: paths.memoryFile("decision", "mem_2026-04-27_000001", "memory"),
@@ -2697,7 +2697,7 @@ describe("memory.read", () => {
       index: idx,
     });
     const result = await read.handle({ id: "mem_2026-04-27_000001" });
-    expect(result.frontmatter.title).toBe("Use Supabase for KinCare auth");
+    expect(result.frontmatter.title).toBe("Use SQLite FTS5 for keyword search");
     expect(result.location).toBe("memory");
   });
 });
@@ -2859,9 +2859,9 @@ describe("memory.search", () => {
     const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human" });
     const search = createSearchTool({ auditor, index: idx });
 
-    await write.handle({ type: "decision", fields: { title: "Use Supabase", project: "kincare" }, content: "supabase has rls", agent: "human" });
-    await write.handle({ type: "observation", fields: { title: "Pricing", project: "kincare" }, content: "supabase free tier", agent: "human" });
-    await write.handle({ type: "decision", fields: { title: "Other choice", project: "frozo" }, content: "unrelated content", agent: "human" });
+    await write.handle({ type: "decision", fields: { title: "Use Supabase", project: "myapp" }, content: "supabase has rls", agent: "human" });
+    await write.handle({ type: "observation", fields: { title: "Pricing", project: "myapp" }, content: "supabase free tier", agent: "human" });
+    await write.handle({ type: "decision", fields: { title: "Other choice", project: "otherapp" }, content: "unrelated content", agent: "human" });
 
     const r1 = await search.handle({ query: "supabase" });
     expect(r1.results.length).toBe(2);
@@ -2870,7 +2870,7 @@ describe("memory.search", () => {
     expect(r2.results.length).toBe(1);
     expect(r2.results[0]!.title).toBe("Use Supabase");
 
-    const r3 = await search.handle({ query: "supabase", project: "kincare" });
+    const r3 = await search.handle({ query: "supabase", project: "myapp" });
     expect(r3.results.length).toBe(2);
   });
 
@@ -3396,7 +3396,7 @@ describe("populateIndex", () => {
     expect(idx.getById("mem_2026-04-27_aaaaaa")?.location).toBe("memory");
     expect(idx.getById("mem_2026-04-27_bbbbbb")?.location).toBe("inbox");
     // sample-decision.md should also have been indexed
-    expect(idx.getById("mem_2026-04-27_000001")?.title).toBe("Use Supabase for KinCare auth");
+    expect(idx.getById("mem_2026-04-27_000001")?.title).toBe("Use SQLite FTS5 for keyword search");
   });
 });
 ```
@@ -4373,7 +4373,7 @@ git commit -m "feat(mcp): add top-level CLI dispatch with commander"
 ```markdown
 # Vault-Mem
 
-Personal-use, local-first shared memory layer for an agent stack (Claude Code, Cursor, Frozo Founder OS). See [`vault-mem-prd.md`](vault-mem-prd.md) for context and [`docs/superpowers/specs/`](docs/superpowers/specs/) for current designs.
+Personal-use, local-first shared memory layer for any MCP-aware agent stack (Claude Code, Cursor, custom agents). See [`vault-mem-prd.md`](vault-mem-prd.md) for context and [`docs/superpowers/specs/`](docs/superpowers/specs/) for current designs.
 
 ## Requirements
 
@@ -4400,7 +4400,7 @@ Add to `~/.config/claude-code/mcp.json`:
   "mcpServers": {
     "vault-mem": {
       "command": "node",
-      "args": ["/absolute/path/to/frozo-vault-mem/packages/mcp/bin/vault-mem-mcp"],
+      "args": ["/absolute/path/to/vault-mem/packages/mcp/bin/vault-mem-mcp"],
       "env": { "VAULT_MEM_PATH": "/Users/<you>/vault-mem" }
     }
   }

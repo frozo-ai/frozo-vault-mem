@@ -2,7 +2,7 @@
 
 **Status:** Draft for implementation
 **Date:** 2026-04-28
-**Owner:** Ashish
+**Owner:** the maintainer
 **PRD:** [`vault-mem-prd.md`](../../../vault-mem-prd.md) §8 Phase 3, §5.2
 **Phase 1 spec:** [`2026-04-27-vault-mem-mcp-design.md`](2026-04-27-vault-mem-mcp-design.md)
 **Phase 2 spec:** [`2026-04-27-vault-mem-phase-2-design.md`](2026-04-27-vault-mem-phase-2-design.md)
@@ -74,7 +74,7 @@ The daemon reads and writes the vault directly:
 ### 3.3 Repo layout
 
 ```
-frozo-vault-mem/
+vault-mem/
 ├── packages/
 │   ├── mcp/                              # Phase 1+2 (TypeScript) — unchanged
 │   └── keeper/                           # NEW (Phase 3, Python)
@@ -298,7 +298,7 @@ def run(opts) -> RunReport:
 **Output (non-dry-run):**
 
 ```
-keeper run 01KQAB...  started 2026-04-28T03:00:00Z  vault=/Users/ashishdhiman/vault-mem
+keeper run 01KQAB...  started 2026-04-28T03:00:00Z  vault=/Users/REPLACE_USER/vault-mem
   triage   : promoted 2 / skipped 4 / errors 0
   link     : rebuilt links.jsonl with 47 rows across 12 memories
   decay    : decayed 6 observations (avg delta -0.05) / skipped 8
@@ -490,10 +490,10 @@ Versions pinned in `pyproject.toml` at implementation time.
   <key>Label</key>            <string>com.vaultmem.keeper</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/ashishdhiman/.local/bin/uv</string>
+    <string>/Users/REPLACE_USER/.local/bin/uv</string>
     <string>run</string>
     <string>--directory</string>
-    <string>/Users/ashishdhiman/WORK/Frozo-projects/frozo-vault-mem/packages/keeper</string>
+    <string>/Users/REPLACE_USER/path/to/vault-mem/packages/keeper</string>
     <string>python</string>
     <string>-m</string>
     <string>vault_mem_keeper</string>
@@ -501,11 +501,11 @@ Versions pinned in `pyproject.toml` at implementation time.
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>VAULT_MEM_PATH</key> <string>/Users/ashishdhiman/vault-mem</string>
+    <key>VAULT_MEM_PATH</key> <string>/Users/REPLACE_USER/vault-mem</string>
   </dict>
   <key>StartInterval</key>    <integer>1800</integer>
-  <key>StandardErrorPath</key><string>/Users/ashishdhiman/Library/Logs/vault-mem-keeper.err.log</string>
-  <key>StandardOutPath</key>  <string>/Users/ashishdhiman/Library/Logs/vault-mem-keeper.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/REPLACE_USER/Library/Logs/vault-mem-keeper.err.log</string>
+  <key>StandardOutPath</key>  <string>/Users/REPLACE_USER/Library/Logs/vault-mem-keeper.out.log</string>
   <key>RunAtLoad</key>        <false/>
 </dict>
 </plist>

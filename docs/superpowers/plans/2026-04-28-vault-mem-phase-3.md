@@ -527,7 +527,7 @@ def test_hashes_search_query_for_search_op():
             "op": "search",
             "agent": "keeper",
             "session": "01H",
-            "query": "kincare auth",
+            "query": "myapp auth",
             "result_count": 4,
             "mode": "hybrid",
         })
@@ -546,7 +546,7 @@ def test_hashes_context_query_when_present():
             "op": "context",
             "agent": "keeper",
             "session": "01H",
-            "project": "kincare",
+            "project": "myapp",
             "max_tokens": 4000,
             "query": "auth",
             "result_count": 2,
@@ -555,7 +555,7 @@ def test_hashes_context_query_when_present():
         line = json.loads(log.read_text().strip())
         assert "query" not in line
         assert line["query_hash"].startswith("sha256:")
-        assert line["project"] == "kincare"
+        assert line["project"] == "myapp"
 
 
 def test_keeper_run_op_passes_through():
@@ -997,13 +997,13 @@ def _seed(db_path: str) -> None:
     """)
     rows = [
         ("mem_2026-04-27_aaaaaa", "decision", "Use Supabase", "supabase rls",
-         json.dumps(["auth"]), "kincare", "active", "memory",
+         json.dumps(["auth"]), "myapp", "active", "memory",
          "/v/memory/decisions/mem_2026-04-27_aaaaaa.md", "2026-04-27T14:32:00.000Z"),
         ("mem_2026-04-27_bbbbbb", "observation", "Pricing", "supabase free tier",
-         json.dumps([]), "kincare", "active", "inbox",
+         json.dumps([]), "myapp", "active", "inbox",
          "/v/inbox/observations/mem_2026-04-27_bbbbbb.md", "2026-04-27T14:32:00.000Z"),
         ("mem_2026-04-27_cccccc", "decision", "Other choice", "ops",
-         json.dumps([]), "frozo", "archived", "archive",
+         json.dumps([]), "otherapp", "archived", "archive",
          "/v/archive/mem_2026-04-27_cccccc.md", "2026-04-27T14:32:00.000Z"),
     ]
     db.executemany(
@@ -1022,9 +1022,9 @@ def test_list_returns_all_filter_matched_rows():
         try:
             assert len(r.list({})) == 3
             assert len(r.list({"type": "decision"})) == 2
-            assert len(r.list({"project": "kincare"})) == 2
+            assert len(r.list({"project": "myapp"})) == 2
             assert len(r.list({"location": "memory"})) == 1
-            assert len(r.list({"location": "memory", "project": "kincare"})) == 1
+            assert len(r.list({"location": "memory", "project": "myapp"})) == 1
             assert len(r.list({"status": "archived"})) == 1
         finally:
             r.close()
@@ -1192,7 +1192,7 @@ def _seed_lance(dir_path: str) -> None:
             "vector": [0.05] * EMBED_DIM,
             "type": "decision",
             "title": title,
-            "project": "kincare",
+            "project": "myapp",
             "tags": ["auth"],
             "status": "active",
             "location": "memory",
@@ -2884,7 +2884,7 @@ git commit -m "feat(keeper): add CLI entry (run/status/doctor)"
     <string>/Users/REPLACE_USER/.local/bin/uv</string>
     <string>run</string>
     <string>--directory</string>
-    <string>/Users/REPLACE_USER/path/to/frozo-vault-mem/packages/keeper</string>
+    <string>/Users/REPLACE_USER/path/to/vault-mem/packages/keeper</string>
     <string>python</string>
     <string>-m</string>
     <string>vault_mem_keeper</string>

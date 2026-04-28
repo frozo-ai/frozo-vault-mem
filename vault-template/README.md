@@ -1,6 +1,6 @@
 # Vault-Mem
 
-Personal memory vault for Ashish's agent stack. See the project repo's [`vault-mem-prd.md`](https://github.com/ashishdhiman/frozo-vault-mem/blob/main/vault-mem-prd.md) for context.
+A local-first shared memory vault for any MCP-aware agent stack. See the project repo's [`docs/origin/personal-use-prd.md`](https://github.com/your-org/vault-mem/blob/main/docs/origin/personal-use-prd.md) for context.
 
 ## Layout
 

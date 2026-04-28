@@ -30,9 +30,9 @@ describe("memory.search", () => {
     const write = createWriteTool({ vault: v.root, schemas, auditor, index: idx, defaultAgent: "human", lance, embedder });
     const search = createSearchTool({ auditor, index: idx, lance, embedder });
 
-    await write.handle({ type: "decision", fields: { title: "Use Supabase", project: "kincare" }, content: "supabase has rls", agent: "human" });
-    await write.handle({ type: "observation", fields: { title: "Pricing", project: "kincare" }, content: "supabase free tier", agent: "human" });
-    await write.handle({ type: "decision", fields: { title: "Other choice", project: "frozo" }, content: "unrelated content", agent: "human" });
+    await write.handle({ type: "decision", fields: { title: "Use Supabase", project: "myapp" }, content: "supabase has rls", agent: "human" });
+    await write.handle({ type: "observation", fields: { title: "Pricing", project: "myapp" }, content: "supabase free tier", agent: "human" });
+    await write.handle({ type: "decision", fields: { title: "Other choice", project: "otherapp" }, content: "unrelated content", agent: "human" });
 
     // After writes, Lance should have rows for the written memories
     expect(await lance.count()).toBeGreaterThanOrEqual(1);
@@ -44,7 +44,7 @@ describe("memory.search", () => {
     expect(r2.results.length).toBe(1);
     expect(r2.results[0]!.title).toBe("Use Supabase");
 
-    const r3 = await search.handle({ query: "supabase", project: "kincare", mode: "fts" });
+    const r3 = await search.handle({ query: "supabase", project: "myapp", mode: "fts" });
     expect(r3.results.length).toBe(2);
 
     rmSync(lanceDir, { recursive: true, force: true });

@@ -50,7 +50,7 @@ describe("populateIndex", () => {
     expect(idx.getById("mem_2026-04-27_aaaaaa")?.location).toBe("memory");
     expect(idx.getById("mem_2026-04-27_bbbbbb")?.location).toBe("inbox");
     // sample-decision.md should also have been indexed
-    expect(idx.getById("mem_2026-04-27_000001")?.title).toBe("Use Supabase for KinCare auth");
+    expect(idx.getById("mem_2026-04-27_000001")?.title).toBe("Use SQLite FTS5 for the keyword index");
 
     // Lance row count should match FTS count
     expect(await lance.count()).toBe(idx.count());

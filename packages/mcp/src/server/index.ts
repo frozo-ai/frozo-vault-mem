@@ -39,7 +39,14 @@ export interface BuiltServer {
 const TOOL_DEFS = [
   {
     name: "memory.write",
-    description: "Create a new memory in the vault inbox.",
+    description:
+      "Record a decision, observation, learning, todo, entity, or question into the user's persistent vault. " +
+      "USE THIS PROACTIVELY whenever the user: makes a choice ('we'll go with X'), shares a learning or insight, " +
+      "describes a person/project/tool worth remembering, agrees on a strategy, or hits a decision point. " +
+      "Don't wait for explicit instruction — write the memory in the same turn the moment is observed. " +
+      "`fields` MUST include `title: string`; `tags: string[]`, `project: string`, `confidence: 0..1` are recommended. " +
+      "`content` is the markdown body (rationale, context, alternatives considered). " +
+      "Memory lands in inbox/ and is auto-promoted by the keeper daemon after 24h.",
     inputSchema: {
       type: "object",
       required: ["type", "fields", "content"],
@@ -64,7 +71,10 @@ const TOOL_DEFS = [
   },
   {
     name: "memory.read",
-    description: "Read a memory by id.",
+    description:
+      "Fetch one memory by exact id. Use after `memory.search` returns the row you want, " +
+      "or when the user references an id directly. Returns frontmatter, full markdown body, " +
+      "current location (inbox/memory/archive), and absolute path.",
     inputSchema: {
       type: "object",
       required: ["id"],
@@ -73,7 +83,14 @@ const TOOL_DEFS = [
   },
   {
     name: "memory.search",
-    description: "Full-text search the vault.",
+    description:
+      "Search the vault for memories. USE THIS BEFORE answering any question about the user's projects, " +
+      "decisions, people, or tools — the user has a persistent memory layer; consult it before relying on " +
+      "conversation context alone or guessing. Default mode is `hybrid` (combines keyword + semantic search " +
+      "via Reciprocal Rank Fusion) — use it for natural-language queries. Use `mode: 'fts'` for exact-token " +
+      "queries (ids, brand names) or `mode: 'semantic'` when you want only meaning-based matches. " +
+      "Filter by `type`, `project`, `status`, or `location` to narrow results. " +
+      "Returns ranked list with id, title, snippet, score, and metadata.",
     inputSchema: {
       type: "object",
       required: ["query"],
@@ -101,7 +118,10 @@ const TOOL_DEFS = [
   },
   {
     name: "memory.promote",
-    description: "Move a memory from inbox/ to memory/.",
+    description:
+      "Manually graduate a memory from inbox/ to canonical memory/ before the keeper's 24h auto-promote tick. " +
+      "Use only when the user explicitly asks to confirm or promote a memory. The keeper daemon promotes most " +
+      "memories automatically; manual promote is for cases where the user wants something canonical immediately.",
     inputSchema: {
       type: "object",
       required: ["id"],
@@ -110,7 +130,13 @@ const TOOL_DEFS = [
   },
   {
     name: "memory.context",
-    description: "Get curated context for a project (summaries lead; semantic-led when query supplied).",
+    description:
+      "Load a curated bundle of memories for a project, packed within a token budget. " +
+      "USE THIS AT THE START of any multi-turn project conversation to ground yourself in the user's " +
+      "prior decisions, learnings, and notes. Pass `query` for semantic-led ranking around a specific " +
+      "topic (e.g., 'authentication choices'); omit `query` to get a recency-led, summary-first dump " +
+      "of the project. Returns ordered list of memory cards with bucket type, content, and token estimate. " +
+      "Treat the result as authoritative project context the user expects you to know.",
     inputSchema: {
       type: "object",
       required: ["project"],

@@ -49,7 +49,7 @@ describe("createMockEmbedder", () => {
 describe("createTransformersEmbedder (real model, slow first run)", () => {
   it("produces 384-dim L2-normalized Float32Array", { timeout: 30_000 }, async () => {
     const e = createTransformersEmbedder();
-    const v = await e.embed("Use Supabase for KinCare auth");
+    const v = await e.embed("Use SQLite FTS5 for the keyword index");
     expect(v).toBeInstanceOf(Float32Array);
     expect(v.length).toBe(EMBED_DIM);
     let sumSq = 0;

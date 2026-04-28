@@ -29,7 +29,7 @@ describe("Auditor", () => {
 
   it("hashes search queries instead of storing them raw", () => {
     const a = new Auditor(logPath);
-    a.write({ op: "search", agent: "claude-code", session: "01H", query: "kincare auth", result_count: 4, mode: "fts" });
+    a.write({ op: "search", agent: "claude-code", session: "01H", query: "myapp auth", result_count: 4, mode: "fts" });
     const line = JSON.parse(readFileSync(logPath, "utf8").trim());
     expect(line.query).toBeUndefined();
     expect(line.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -58,7 +58,7 @@ describe("Auditor", () => {
       op: "context",
       agent: "claude-code",
       session: "01H",
-      project: "kincare",
+      project: "myapp",
       max_tokens: 4000,
       query: "auth decisions",
       result_count: 3,
@@ -68,7 +68,7 @@ describe("Auditor", () => {
       op: "context",
       agent: "claude-code",
       session: "01H",
-      project: "kincare",
+      project: "myapp",
       max_tokens: 4000,
       result_count: 5,
       total_tokens: 1200,
@@ -78,7 +78,7 @@ describe("Auditor", () => {
     const noQuery = JSON.parse(lines[1]!);
     expect(withQuery.query).toBeUndefined();
     expect(withQuery.query_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(withQuery.project).toBe("kincare");
+    expect(withQuery.project).toBe("myapp");
     expect(noQuery.query).toBeUndefined();
     expect(noQuery.query_hash).toBeUndefined();
     expect(noQuery.total_tokens).toBe(1200);

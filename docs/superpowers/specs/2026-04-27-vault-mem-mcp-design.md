@@ -2,7 +2,7 @@
 
 **Status:** Draft for implementation
 **Date:** 2026-04-27
-**Owner:** Ashish
+**Owner:** the maintainer
 **PRD:** [`vault-mem-prd.md`](../../../vault-mem-prd.md)
 **Phase:** 0 (vault scaffolding) + 1 (MCP server v0.1) bundled
 
@@ -10,7 +10,7 @@
 
 ## 1. Context & purpose
 
-Vault-Mem is a personal-use, local-first shared memory layer for the owner's agent stack (Claude Code, Cursor, Frozo Founder OS). Every agent write becomes a typed markdown file in an Obsidian vault with enforced YAML frontmatter. See the PRD for full motivation.
+Vault-Mem is a personal-use, local-first shared memory layer for any MCP-aware agent stack (Claude Code, Cursor, custom agents). Every agent write becomes a typed markdown file in an Obsidian vault with enforced YAML frontmatter. See the PRD for full motivation.
 
 This document specifies the first shippable artifact:
 
@@ -43,7 +43,7 @@ After this phase ships, Claude Code can read and write memories during a real co
 ### 3.1 Monorepo layout
 
 ```
-frozo-vault-mem/
+vault-mem/
 ├── docs/superpowers/specs/        # design docs
 ├── vault-mem-prd.md
 ├── CLAUDE.md

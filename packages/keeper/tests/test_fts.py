@@ -22,13 +22,13 @@ def _seed(db_path: str) -> None:
     """)
     rows = [
         ("mem_2026-04-27_aaaaaa", "decision", "Use Supabase", "supabase rls",
-         json.dumps(["auth"]), "kincare", "active", "memory",
+         json.dumps(["auth"]), "myapp", "active", "memory",
          "/v/memory/decisions/mem_2026-04-27_aaaaaa.md", "2026-04-27T14:32:00.000Z"),
         ("mem_2026-04-27_bbbbbb", "observation", "Pricing", "supabase free tier",
-         json.dumps([]), "kincare", "active", "inbox",
+         json.dumps([]), "myapp", "active", "inbox",
          "/v/inbox/observations/mem_2026-04-27_bbbbbb.md", "2026-04-27T14:32:00.000Z"),
         ("mem_2026-04-27_cccccc", "decision", "Other choice", "ops",
-         json.dumps([]), "frozo", "archived", "archive",
+         json.dumps([]), "otherapp", "archived", "archive",
          "/v/archive/mem_2026-04-27_cccccc.md", "2026-04-27T14:32:00.000Z"),
     ]
     insert_sql = (
@@ -49,9 +49,9 @@ def test_list_returns_all_filter_matched_rows():
         try:
             assert len(r.list({})) == 3
             assert len(r.list({"type": "decision"})) == 2
-            assert len(r.list({"project": "kincare"})) == 2
+            assert len(r.list({"project": "myapp"})) == 2
             assert len(r.list({"location": "memory"})) == 1
-            assert len(r.list({"location": "memory", "project": "kincare"})) == 1
+            assert len(r.list({"location": "memory", "project": "myapp"})) == 1
             assert len(r.list({"status": "archived"})) == 1
         finally:
             r.close()

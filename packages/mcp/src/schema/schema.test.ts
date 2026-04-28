@@ -34,7 +34,7 @@ describe("_common.json schema", () => {
     const ok = validate({
       id: "mem_2026-04-27_a8f3c0",
       type: "decision",
-      title: "Use Supabase for KinCare auth",
+      title: "Use SQLite FTS5 for keyword search",
       agent: "claude-code",
       session: "01HXABCDEFGHJKMNPQRSTVWXYZ",
       created: "2026-04-27T14:32:00.000Z",

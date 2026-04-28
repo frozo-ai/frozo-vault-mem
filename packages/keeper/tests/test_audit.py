@@ -36,7 +36,7 @@ def test_hashes_search_query_for_search_op():
             "op": "search",
             "agent": "keeper",
             "session": "01H",
-            "query": "kincare auth",
+            "query": "myapp auth",
             "result_count": 4,
             "mode": "hybrid",
         })
@@ -55,7 +55,7 @@ def test_hashes_context_query_when_present():
             "op": "context",
             "agent": "keeper",
             "session": "01H",
-            "project": "kincare",
+            "project": "myapp",
             "max_tokens": 4000,
             "query": "auth",
             "result_count": 2,
@@ -64,7 +64,7 @@ def test_hashes_context_query_when_present():
         line = json.loads(log.read_text().strip())
         assert "query" not in line
         assert line["query_hash"].startswith("sha256:")
-        assert line["project"] == "kincare"
+        assert line["project"] == "myapp"
 
 
 def test_keeper_run_op_passes_through():

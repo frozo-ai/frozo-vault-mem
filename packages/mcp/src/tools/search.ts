@@ -39,7 +39,7 @@ export interface SearchToolInput extends SearchInput {
  *
  * Examples:
  *   "freshly-shipped vault-mem MCP" → "freshly* shipped* vault* mem* mcp*"
- *   "kincare auth"                  → "kincare* auth*"
+ *   "myapp auth"                    → "myapp* auth*"
  *   "DPDP" / 'CamelCase'            → "dpdp*" / "camelcase*"
  *   ""  /  "   --   "               → "" (caller short-circuits to empty results)
  *

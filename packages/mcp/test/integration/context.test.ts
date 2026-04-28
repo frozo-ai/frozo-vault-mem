@@ -41,7 +41,7 @@ describe("memory.context", () => {
 
     const sum = await write.handle({
       type: "summary",
-      fields: { title: "Daily summary 2026-04-27", project: "kincare", period: "daily", covers: [] },
+      fields: { title: "Daily summary 2026-04-27", project: "myapp", period: "daily", covers: [] },
       content: "rolled-up daily notes",
       agent: "human",
     });
@@ -50,14 +50,14 @@ describe("memory.context", () => {
     for (let i = 0; i < 3; i++) {
       const w = await write.handle({
         type: "decision",
-        fields: { title: `Decision ${i}`, project: "kincare" },
+        fields: { title: `Decision ${i}`, project: "myapp" },
         content: `decision body ${i}`,
         agent: "human",
       });
       await promote.handle({ id: w.id });
     }
 
-    const r = await context.handle({ project: "kincare", max_tokens: 2000 });
+    const r = await context.handle({ project: "myapp", max_tokens: 2000 });
     expect(r.items.length).toBeGreaterThan(0);
     expect(r.items[0]!.bucket).toBe("summary");
     expect(r.total_tokens).toBeLessThanOrEqual(2000);
@@ -71,7 +71,7 @@ describe("memory.context", () => {
     for (let i = 0; i < 6; i++) {
       const w = await write.handle({
         type: "decision",
-        fields: { title: `Decision ${i}`, project: "kincare" },
+        fields: { title: `Decision ${i}`, project: "myapp" },
         content: `xxxxxxxxxx ${i}`.padEnd(200, "x"),
         agent: "human",
       });
@@ -79,7 +79,7 @@ describe("memory.context", () => {
     }
 
     // Generous enough for one decision (~50–60 tokens), tight enough to truncate the rest
-    const r = await context.handle({ project: "kincare", max_tokens: 80 });
+    const r = await context.handle({ project: "myapp", max_tokens: 80 });
     expect(r.items.length).toBeGreaterThanOrEqual(1);
     expect(r.total_tokens).toBeLessThanOrEqual(80);
     expect(r.truncated).toBeGreaterThan(0);
@@ -94,11 +94,11 @@ describe("memory.context", () => {
     // (title\ncontent), so exact ranking depends on hash proximity — not semantic similarity.
     // We assert that the auth decision is present in the results (relaxed per Annotation C),
     // rather than asserting it is first (which depends on mock embedder hash ordering).
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "auth choices", project: "kincare" }, content: "auth", agent: "human" })).id });
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "payments", project: "kincare" }, content: "payments", agent: "human" })).id });
-    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "ops", project: "kincare" }, content: "ops", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "auth choices", project: "myapp" }, content: "auth", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "payments", project: "myapp" }, content: "payments", agent: "human" })).id });
+    await promote.handle({ id: (await write.handle({ type: "decision", fields: { title: "ops", project: "myapp" }, content: "ops", agent: "human" })).id });
 
-    const r = await context.handle({ project: "kincare", max_tokens: 4000, query: "auth" });
+    const r = await context.handle({ project: "myapp", max_tokens: 4000, query: "auth" });
     expect(r.items.length).toBeGreaterThan(0);
     // Relaxed assertion: the auth decision should be present in the results;
     // exact ranking position is non-deterministic under the mock embedder.
