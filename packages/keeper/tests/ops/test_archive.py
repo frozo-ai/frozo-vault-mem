@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import frontmatter
-import pytest
 
 from vault_mem_keeper.audit import Auditor
 from vault_mem_keeper.config import KeeperConfig
@@ -22,7 +21,9 @@ def _write_canonical(
 ) -> None:
     paths = vault_paths(str(vault_root))
     Path(paths.memory_dir(type_)).mkdir(parents=True, exist_ok=True)
-    updated = (datetime.now(UTC) - timedelta(days=updated_days_ago)).isoformat().replace("+00:00", "Z")
+    updated = (
+        (datetime.now(UTC) - timedelta(days=updated_days_ago)).isoformat().replace("+00:00", "Z")
+    )
     fm = {
         "id": mid, "type": type_, "title": f"T {mid}",
         "agent": "human", "session": None,
@@ -44,7 +45,8 @@ def test_archives_ttl_expired(tmp_vault):
 
     cfg = KeeperConfig()
     schemas = load_schemas(str(tmp_vault))
-    audit = Auditor(paths.audit_file); Path(paths.audit_file).touch()
+    audit = Auditor(paths.audit_file)
+    Path(paths.audit_file).touch()
 
     report = run_archive(paths, cfg, schemas, audit, dry_run=False, run_id="test")
 
@@ -62,7 +64,8 @@ def test_archives_low_confidence(tmp_vault):
 
     cfg = KeeperConfig()
     schemas = load_schemas(str(tmp_vault))
-    audit = Auditor(paths.audit_file); Path(paths.audit_file).touch()
+    audit = Auditor(paths.audit_file)
+    Path(paths.audit_file).touch()
 
     run_archive(paths, cfg, schemas, audit, dry_run=False, run_id="test")
     assert Path(paths.memory_file("observation", "mem_2026-04-27_bbbbbb", "archive")).exists()
@@ -75,7 +78,8 @@ def test_keeps_active_high_confidence_no_ttl(tmp_vault):
 
     cfg = KeeperConfig()
     schemas = load_schemas(str(tmp_vault))
-    audit = Auditor(paths.audit_file); Path(paths.audit_file).touch()
+    audit = Auditor(paths.audit_file)
+    Path(paths.audit_file).touch()
 
     run_archive(paths, cfg, schemas, audit, dry_run=False, run_id="test")
     assert Path(paths.memory_file("observation", "mem_2026-04-27_cccccc", "memory")).exists()
@@ -89,7 +93,8 @@ def test_dry_run_does_not_move(tmp_vault):
 
     cfg = KeeperConfig()
     schemas = load_schemas(str(tmp_vault))
-    audit = Auditor(paths.audit_file); Path(paths.audit_file).touch()
+    audit = Auditor(paths.audit_file)
+    Path(paths.audit_file).touch()
 
     report = run_archive(paths, cfg, schemas, audit, dry_run=True, run_id="test")
     assert Path(paths.memory_file("observation", "mem_2026-04-27_dddddd", "memory")).exists()

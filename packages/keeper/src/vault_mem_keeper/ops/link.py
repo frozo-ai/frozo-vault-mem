@@ -2,8 +2,7 @@
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, UTC
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
 from ..atomic_write import atomic_write
@@ -93,7 +92,7 @@ def run_link(
                     "v": 1,
                     "from": mid,
                     "to": c["id"],
-                    "score": 1.0,                    # placeholder; LanceDB v0.13 distance semantics vary
+                    "score": 1.0,  # placeholder; LanceDB v0.13 distance semantics vary
                     "computed_at": now_iso,
                     "embed_model": EMBED_MODEL_ID,
                     "run_id": run_id,

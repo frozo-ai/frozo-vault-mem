@@ -3,7 +3,7 @@ memory/<type>/ to archive/."""
 
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -82,7 +82,9 @@ def run_archive(
             dst = Path(paths.memory_file(t, mid, "archive"))
 
             if dry_run:
-                log.info("[dry-run] would archive", id=mid, src=str(md), dst=str(dst), reasons=reasons)
+                log.info(
+                    "[dry-run] would archive", id=mid, src=str(md), dst=str(dst), reasons=reasons
+                )
                 report.archived += 1
                 continue
 

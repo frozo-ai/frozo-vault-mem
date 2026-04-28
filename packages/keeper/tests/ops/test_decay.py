@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import frontmatter
@@ -22,7 +22,9 @@ def _write_canonical_memory(
 ) -> None:
     paths = vault_paths(str(vault_root))
     Path(paths.memory_dir(type_)).mkdir(parents=True, exist_ok=True)
-    updated = (datetime.now(UTC) - timedelta(days=updated_days_ago)).isoformat().replace("+00:00", "Z")
+    updated = (
+        (datetime.now(UTC) - timedelta(days=updated_days_ago)).isoformat().replace("+00:00", "Z")
+    )
     fm = {
         "id": mid,
         "type": type_,

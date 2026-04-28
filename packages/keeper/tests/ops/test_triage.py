@@ -1,17 +1,13 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import frontmatter
-import pytest
 
 from vault_mem_keeper.audit import Auditor
 from vault_mem_keeper.config import KeeperConfig
 from vault_mem_keeper.frontmatter import load_schemas
 from vault_mem_keeper.ops.triage import run_triage
 from vault_mem_keeper.paths import vault_paths
-
-REPO_ROOT = Path(__file__).resolve().parents[4]
-VAULT_TEMPLATE = REPO_ROOT / "vault-template"
 
 
 def _write_inbox_memory(
@@ -24,7 +20,9 @@ def _write_inbox_memory(
 ) -> None:
     paths = vault_paths(str(vault_root))
     Path(paths.inbox_dir("decision")).mkdir(parents=True, exist_ok=True)
-    created = (datetime.now(UTC) - timedelta(minutes=age_minutes)).isoformat().replace("+00:00", "Z")
+    created = (
+        (datetime.now(UTC) - timedelta(minutes=age_minutes)).isoformat().replace("+00:00", "Z")
+    )
     fm = {
         "id": mid,
         "type": "decision",
@@ -49,7 +47,9 @@ def test_promotes_old_high_confidence_memories(tmp_vault):
     _write_inbox_memory(tmp_vault, "mem_2026-04-27_aaaaaa", confidence=0.85, age_minutes=2000)
     _write_inbox_memory(tmp_vault, "mem_2026-04-27_bbbbbb", confidence=0.85, age_minutes=10)
     _write_inbox_memory(tmp_vault, "mem_2026-04-27_cccccc", confidence=0.4, age_minutes=2000)
-    _write_inbox_memory(tmp_vault, "mem_2026-04-27_dddddd", confidence=0.85, age_minutes=10, human_reviewed=True)
+    _write_inbox_memory(
+        tmp_vault, "mem_2026-04-27_dddddd", confidence=0.85, age_minutes=10, human_reviewed=True
+    )
 
     cfg = KeeperConfig()
     schemas = load_schemas(str(tmp_vault))

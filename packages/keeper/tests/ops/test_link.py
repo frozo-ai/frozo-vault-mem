@@ -3,13 +3,11 @@ import sqlite3
 from pathlib import Path
 
 import lancedb
-import pytest
 
 from vault_mem_keeper.audit import Auditor
 from vault_mem_keeper.config import KeeperConfig
 from vault_mem_keeper.ops.link import run_link
 from vault_mem_keeper.paths import vault_paths
-
 
 EMBED_DIM = 384
 
@@ -39,7 +37,9 @@ def _seed_indexes(vault_root: str) -> None:
              "2026-04-27T14:32:00.000Z"),
         )
     db.executemany(
-        "INSERT INTO memories_fts (id,type,title,body,tags,project,status,location,path,updated) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO memories_fts "
+        "(id,type,title,body,tags,project,status,location,path,updated) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
         rows,
     )
     db.commit()
@@ -48,7 +48,7 @@ def _seed_indexes(vault_root: str) -> None:
     # Lance
     lancedb_db = lancedb.connect(paths.lance_dir)
     lance_rows = []
-    for i, suffix in enumerate(["aaaaaa", "bbbbbb", "cccccc"]):
+    for suffix in ["aaaaaa", "bbbbbb", "cccccc"]:
         # Similar vectors for aaaaaa and bbbbbb (e.g., both biased toward dim 0)
         v = [0.0] * EMBED_DIM
         if suffix == "aaaaaa":
@@ -85,7 +85,11 @@ def test_link_writes_links_jsonl(tmp_vault):
     report = run_link(paths, cfg, schemas={}, audit=audit, dry_run=False, run_id="test")
 
     assert Path(paths.links_file).is_file()
-    rows = [json.loads(line) for line in Path(paths.links_file).read_text().splitlines() if line.strip()]
+    rows = [
+        json.loads(line)
+        for line in Path(paths.links_file).read_text().splitlines()
+        if line.strip()
+    ]
     # aaaaaa and bbbbbb should be each other's neighbors
     aa_to = [r["to"] for r in rows if r["from"] == "mem_2026-04-27_aaaaaa"]
     bb_to = [r["to"] for r in rows if r["from"] == "mem_2026-04-27_bbbbbb"]

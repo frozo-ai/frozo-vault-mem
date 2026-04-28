@@ -2,7 +2,7 @@
 last_decay_at by completed periods (preserves partial-period progress)."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
