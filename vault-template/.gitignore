@@ -5,3 +5,6 @@ _system/index.sqlite-shm
 
 # Embedding index — rebuildable from .md sources
 _system/embeddings.lance/
+
+# Daemon-managed; rebuilt every keeper run
+_system/links.jsonl
