@@ -18,8 +18,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # No version pin here — packageManager field in package.json controls it.
 
       - uses: actions/setup-node@v4
         with:
@@ -58,9 +57,9 @@ jobs:
       - name: Set up Python 3.12
         run: uv python install 3.12
 
-      - name: Install dependencies
+      - name: Install dependencies (incl. dev group for ruff and pytest)
         working-directory: packages/keeper
-        run: uv sync
+        run: uv sync --all-groups
 
       - name: Lint (ruff)
         working-directory: packages/keeper
