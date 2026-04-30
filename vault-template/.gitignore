@@ -1,3 +1,7 @@
+# Re-include the empty audit.log starter (root .gitignore has *.log
+# which would otherwise hide it from git, breaking init on fresh clones).
+!_system/audit.log
+
 # FTS index — rebuildable from .md sources
 _system/index.sqlite
 _system/index.sqlite-wal

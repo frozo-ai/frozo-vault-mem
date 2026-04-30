@@ -39,6 +39,13 @@ export async function runInit(opts: InitOpts): Promise<{ target: string }> {
     writeFileSync(paths.configFile, cfgRaw.trimEnd() + `\nvault_id: ${ulid()}\n`);
   }
 
+  // Ensure the audit log file exists (defensive — the empty starter may not
+  // have been copied if it was missing from the template due to gitignore
+  // rules, see vault-template/.gitignore for context).
+  if (!existsSync(paths.auditFile)) {
+    writeFileSync(paths.auditFile, "");
+  }
+
   if (opts.git) {
     const { execSync } = await import("node:child_process");
     execSync("git init -q && git add -A && git commit -q -m 'init: scaffold vault-mem'", {
