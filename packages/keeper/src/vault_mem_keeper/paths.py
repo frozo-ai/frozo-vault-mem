@@ -67,6 +67,12 @@ class VaultPaths:
     @property
     def links_file(self) -> str: return str(Path(self.root, "_system/links.jsonl"))
     @property
+    def proposals_file(self) -> str: return str(Path(self.root, "_system/proposals.jsonl"))
+    @property
+    def budget_file(self) -> str: return str(Path(self.root, "_system/budget.jsonl"))
+    @property
+    def state_file(self) -> str: return str(Path(self.root, "_system/state.json"))
+    @property
     def archive_dir(self) -> str: return str(Path(self.root, "archive"))
     @property
     def projects_dir(self) -> str: return str(Path(self.root, "projects"))

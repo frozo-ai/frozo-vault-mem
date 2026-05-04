@@ -12,3 +12,8 @@ _system/embeddings.lance/
 
 # Daemon-managed; rebuilt every keeper run
 _system/links.jsonl
+
+# Phase 5 daemon-managed; rebuilt or accumulated per run
+_system/proposals.jsonl
+_system/budget.jsonl
+_system/state.json
