@@ -62,3 +62,54 @@ def test_loads_explicit_keeper_section():
 def test_raises_when_config_file_missing():
     with tempfile.TemporaryDirectory() as d, pytest.raises(FileNotFoundError):
         load_keeper_config(d)
+
+
+def test_loads_default_phase5_config_when_section_missing():
+    with tempfile.TemporaryDirectory() as d:
+        sysd = Path(d, "_system")
+        sysd.mkdir()
+        (sysd / "config.yaml").write_text(
+            "vault_version: 0.1\n"
+            "schema_version: 0.1\n"
+            "default_agent: human\n"
+            "inbox_routing: always\n"
+            "fts:\n"
+            "  index_path: _system/index.sqlite\n"
+            "  rebuild_on_startup: false\n"
+            "audit:\n"
+            "  log_path: _system/audit.log\n"
+        )
+        cfg = load_keeper_config(d)
+        assert cfg.contradict.enabled is True
+        assert cfg.contradict.top_k == 5
+        assert cfg.summarize.daily.min_new_memories == 5
+        assert cfg.budget.monthly_usd_cap == 5.00
+        assert cfg.state_path == "_system/state.json"
+
+
+def test_loads_custom_phase5_overrides():
+    with tempfile.TemporaryDirectory() as d:
+        sysd = Path(d, "_system")
+        sysd.mkdir()
+        (sysd / "config.yaml").write_text(
+            "vault_version: 0.1\n"
+            "schema_version: 0.1\n"
+            "default_agent: human\n"
+            "inbox_routing: always\n"
+            "fts:\n"
+            "  index_path: _system/index.sqlite\n"
+            "  rebuild_on_startup: false\n"
+            "audit:\n"
+            "  log_path: _system/audit.log\n"
+            "keeper:\n"
+            "  budget:\n"
+            "    monthly_usd_cap: 20.0\n"
+            "  summarize:\n"
+            "    daily:\n"
+            "      min_new_memories: 10\n"
+        )
+        cfg = load_keeper_config(d)
+        assert cfg.budget.monthly_usd_cap == 20.0
+        assert cfg.summarize.daily.min_new_memories == 10
+        # Untouched defaults remain
+        assert cfg.contradict.top_k == 5

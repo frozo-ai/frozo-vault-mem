@@ -48,11 +48,47 @@ class ArchiveConfig(BaseModel):
     respect_ttl_days: bool = True
 
 
+class _SummaryPeriodConfig(BaseModel):
+    enabled: bool = True
+    min_new_memories: int
+
+
+class ContradictConfig(BaseModel):
+    enabled: bool = True
+    top_k: int = 5
+    min_severity: str = "medium"
+    types_to_scan: list[str] = Field(default_factory=lambda: [
+        "decision", "observation", "learning", "question",
+    ])
+    haiku_model: str = "claude-haiku-4-5"
+    sonnet_model: str = "claude-sonnet-4-7"
+
+
+class SummarizeConfig(BaseModel):
+    enabled: bool = True
+    daily: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=5))
+    weekly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=20))
+    monthly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=80))
+    max_input_memories: int = 50
+    max_input_tokens: int = 6000
+    archive_predecessors: bool = False
+
+
+class BudgetConfig(BaseModel):
+    enabled: bool = True
+    monthly_usd_cap: float = 5.00
+    log_path: str = "_system/budget.jsonl"
+
+
 class KeeperConfig(BaseModel):
     triage: TriageConfig = Field(default_factory=TriageConfig)
     link: LinkConfig = Field(default_factory=LinkConfig)
     decay: DecayConfig = Field(default_factory=DecayConfig)
     archive: ArchiveConfig = Field(default_factory=ArchiveConfig)
+    contradict: ContradictConfig = Field(default_factory=ContradictConfig)
+    summarize: SummarizeConfig = Field(default_factory=SummarizeConfig)
+    budget: BudgetConfig = Field(default_factory=BudgetConfig)
+    state_path: str = "_system/state.json"
 
 
 def load_keeper_config(vault_root: str) -> KeeperConfig:

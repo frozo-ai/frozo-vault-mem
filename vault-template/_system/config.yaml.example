@@ -37,3 +37,29 @@ keeper:
     enabled: true
     archive_below_confidence: 0.3
     respect_ttl_days: true
+  contradict:
+    enabled: true
+    top_k: 5
+    min_severity: "medium"
+    types_to_scan: ["decision", "observation", "learning", "question"]
+    haiku_model: "claude-haiku-4-5"
+    sonnet_model: "claude-sonnet-4-7"
+  summarize:
+    enabled: true
+    daily:
+      enabled: true
+      min_new_memories: 5
+    weekly:
+      enabled: true
+      min_new_memories: 20
+    monthly:
+      enabled: true
+      min_new_memories: 80
+    max_input_memories: 50
+    max_input_tokens: 6000
+    archive_predecessors: false
+  budget:
+    enabled: true
+    monthly_usd_cap: 5.00
+    log_path: "_system/budget.jsonl"
+  state_path: "_system/state.json"

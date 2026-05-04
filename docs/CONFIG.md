@@ -82,6 +82,52 @@ Move-to-archive policy.
 | `archive_below_confidence` | number 0..1 | `0.3` | Memories with confidence below this floor archive on next run. |
 | `respect_ttl_days` | boolean | `true` | Honor each memory's per-frontmatter `ttl_days`. |
 
+### `keeper.contradict`
+
+Sonnet-powered contradiction detection between memory pairs.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Disable to skip contradiction detection entirely. |
+| `top_k` | integer | `5` | Number of nearest neighbors per memory to compare. |
+| `min_severity` | string | `"medium"` | Only emit proposals at or above this severity (`"low"`, `"medium"`, `"high"`). |
+| `types_to_scan` | list of strings | `["decision","observation","learning","question"]` | Memory types included in contradiction scanning. |
+| `haiku_model` | string | `"claude-haiku-4-5"` | Model used for cheap prefilter step. |
+| `sonnet_model` | string | `"claude-sonnet-4-7"` | Model used for full contradiction judgment. |
+
+### `keeper.summarize`
+
+Per-project periodic summarization via Sonnet.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Disable to skip all summarization. |
+| `daily.enabled` | boolean | `true` | Enable daily summaries. |
+| `daily.min_new_memories` | integer | `5` | Minimum new memories since last summary to trigger a daily run. |
+| `weekly.enabled` | boolean | `true` | Enable weekly summaries. |
+| `weekly.min_new_memories` | integer | `20` | Minimum new memories since last weekly summary. |
+| `monthly.enabled` | boolean | `true` | Enable monthly summaries. |
+| `monthly.min_new_memories` | integer | `80` | Minimum new memories since last monthly summary. |
+| `max_input_memories` | integer | `50` | Cap on memories sent to the model per summary call. |
+| `max_input_tokens` | integer | `6000` | Approximate token budget for the memories block in each prompt. |
+| `archive_predecessors` | boolean | `false` | If `true`, archive the previous summary when a new one is written. |
+
+### `keeper.budget`
+
+Soft monthly USD cap for all Anthropic API calls.
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `enabled` | boolean | `true` | When `false`, cap checks are skipped (not recommended for production). |
+| `monthly_usd_cap` | number | `5.00` | Total spend ceiling in USD for the current calendar month. |
+| `log_path` | string | `_system/budget.jsonl` | Append-only per-call cost ledger. Relative paths resolve against the vault root. |
+
+### `keeper.state_path`
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `state_path` | string | `_system/state.json` | JSON file tracking last-run timestamps for incremental ops (contradict, summarize). |
+
 ## Environment variables
 
 These override config-file defaults at runtime:
