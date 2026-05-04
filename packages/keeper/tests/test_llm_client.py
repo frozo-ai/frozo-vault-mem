@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -6,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from vault_mem_keeper.llm.budget import BudgetTracker
-from vault_mem_keeper.llm.client import AnthropicClient, BudgetExceeded, LlmResponse
+from vault_mem_keeper.llm.client import AnthropicClient, BudgetExceeded
 
 PRICE_TABLE_HAIKU_INPUT_PER_MTOK = 0.80   # USD per million input tokens
 PRICE_TABLE_HAIKU_OUTPUT_PER_MTOK = 4.00
@@ -51,7 +50,7 @@ def test_sonnet_call_uses_sonnet_model():
             sdk=sdk, budget=bt, haiku_model="claude-haiku-4-5",
             sonnet_model="claude-sonnet-4-7", api_key="test",
         )
-        resp = client.sonnet("Judge this contradiction", op="contradict_judge", run_id="r1")
+        client.sonnet("Judge this contradiction", op="contradict_judge", run_id="r1")
         kwargs = sdk.messages.create.call_args.kwargs
         assert kwargs["model"] == "claude-sonnet-4-7"
 

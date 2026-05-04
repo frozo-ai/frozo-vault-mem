@@ -7,10 +7,10 @@ advanced since the proposal was stored."""
 
 import json
 import secrets
-from dataclasses import asdict, dataclass, field
+from collections.abc import Iterator
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 from .atomic_write import atomic_write
 
@@ -96,7 +96,7 @@ class ProposalsHandle:
                 continue
             # Same pair: check that NEITHER side has a newer timestamp in the request.
             # Map id→timestamp for the stored record
-            r_ts: dict[str, str] = {r["source_id"]: r["source_updated"], r["target_id"]: r["target_updated"]}
+            r_ts: dict[str, str] = {r["source_id"]: r["source_updated"], r["target_id"]: r["target_updated"]}  # noqa: E501
             # For each id in the pair, the stored ts must be >= the request ts
             pair_ids = [req_a, req_b]
             all_covered = all(r_ts.get(pid, "") >= req_ts.get(pid, "") for pid in pair_ids)
@@ -116,12 +116,14 @@ class ProposalsHandle:
     def iter_pending(self) -> Iterator[Proposal]:
         for r in self._records:
             if r.get("status") == "pending":
-                yield Proposal(**{k: v for k, v in r.items() if k in Proposal.__dataclass_fields__})
+                fields = {k: v for k, v in r.items() if k in Proposal.__dataclass_fields__}
+                yield Proposal(**fields)
 
     def get(self, proposal_id: str) -> Proposal | None:
         for r in self._records:
             if r["id"] == proposal_id:
-                return Proposal(**{k: v for k, v in r.items() if k in Proposal.__dataclass_fields__})
+                fields = {k: v for k, v in r.items() if k in Proposal.__dataclass_fields__}
+                return Proposal(**fields)
         return None
 
     def count_pending(self) -> int:

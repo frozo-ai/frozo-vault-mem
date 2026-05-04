@@ -1,10 +1,8 @@
-import pytest
-
 from vault_mem_keeper.llm.prompts import (
-    contradict_prefilter,
     contradict_judge,
-    summary_for_period,
+    contradict_prefilter,
     parse_judge_response,
+    summary_for_period,
 )
 
 

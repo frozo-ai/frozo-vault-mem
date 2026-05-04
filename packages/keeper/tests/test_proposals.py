@@ -2,30 +2,27 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from vault_mem_keeper.proposals import (
     Proposal,
-    ProposalsHandle,
     open_proposals,
     pair_dedup_key,
 )
 
 
 def _sample_kwargs(**over):
-    base = dict(
-        kind="contradict",
-        source_id="mem_2026-04-15_a8f3c0",
-        target_id="mem_2026-04-29_b1e9aa",
-        severity="high",
-        reasoning="...",
-        suggested_action="supersede_M_with_N",
-        model="claude-sonnet-4-7",
-        cost_usd=0.0034,
-        run_id="01KQ_TEST",
-        source_updated="2026-04-15T14:32:00.000Z",
-        target_updated="2026-04-29T19:48:12.000Z",
-    )
+    base = {
+        "kind": "contradict",
+        "source_id": "mem_2026-04-15_a8f3c0",
+        "target_id": "mem_2026-04-29_b1e9aa",
+        "severity": "high",
+        "reasoning": "...",
+        "suggested_action": "supersede_M_with_N",
+        "model": "claude-sonnet-4-7",
+        "cost_usd": 0.0034,
+        "run_id": "01KQ_TEST",
+        "source_updated": "2026-04-15T14:32:00.000Z",
+        "target_updated": "2026-04-29T19:48:12.000Z",
+    }
     base.update(over)
     return base
 
@@ -92,7 +89,7 @@ def test_iter_pending_skips_non_pending():
         path = str(Path(d, "proposals.jsonl"))
         ph = open_proposals(path)
         p1 = ph.append(Proposal(**_sample_kwargs(reasoning="r1")))
-        p2 = ph.append(Proposal(**_sample_kwargs(reasoning="r2", source_id="mem_x", target_id="mem_y")))
+        p2 = ph.append(Proposal(**_sample_kwargs(reasoning="r2", source_id="mem_x", target_id="mem_y")))  # noqa: E501
         ph.set_status(p1.id, "rejected")
         # Re-open to test fresh read
         ph.close()

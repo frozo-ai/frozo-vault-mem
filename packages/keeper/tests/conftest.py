@@ -1,7 +1,8 @@
-"""Shared pytest fixtures."""
+"""Shared pytest fixtures, including Anthropic SDK mock for offline LLM tests."""
 
 import shutil
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -19,10 +20,6 @@ def tmp_vault(tmp_path: Path) -> Path:
     if cfg_example.exists() and not cfg.exists():
         cfg_example.rename(cfg)
     return target
-
-
-"""Anthropic SDK mock for keeper unit tests."""
-from unittest.mock import MagicMock
 
 
 def _msg(text: str, in_tokens: int = 100, out_tokens: int = 20):

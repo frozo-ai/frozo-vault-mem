@@ -2,8 +2,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from vault_mem_keeper.state import read_state, write_state
 
 

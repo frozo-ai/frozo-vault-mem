@@ -66,9 +66,9 @@ class ContradictConfig(BaseModel):
 
 class SummarizeConfig(BaseModel):
     enabled: bool = True
-    daily: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=5))
-    weekly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=20))
-    monthly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=80))
+    daily: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=5))  # noqa: E501
+    weekly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=20))  # noqa: E501
+    monthly: _SummaryPeriodConfig = Field(default_factory=lambda: _SummaryPeriodConfig(min_new_memories=80))  # noqa: E501
     max_input_memories: int = 50
     max_input_tokens: int = 6000
     archive_predecessors: bool = False

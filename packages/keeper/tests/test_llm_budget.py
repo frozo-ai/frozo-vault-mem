@@ -34,7 +34,8 @@ def test_month_to_date_sums_only_current_month():
 def test_within_cap_when_under_threshold():
     with tempfile.TemporaryDirectory() as d:
         path = str(Path(d, "budget.jsonl"))
-        Path(path).write_text(_line(datetime.now(UTC).isoformat().replace("+00:00", "Z"), 0.50) + "\n")
+        ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        Path(path).write_text(_line(ts, 0.50) + "\n")
         bt = BudgetTracker(path, monthly_cap_usd=1.00)
         assert not bt.is_exceeded()
 
@@ -42,7 +43,8 @@ def test_within_cap_when_under_threshold():
 def test_exceeded_when_over_threshold():
     with tempfile.TemporaryDirectory() as d:
         path = str(Path(d, "budget.jsonl"))
-        Path(path).write_text(_line(datetime.now(UTC).isoformat().replace("+00:00", "Z"), 1.50) + "\n")
+        ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        Path(path).write_text(_line(ts, 1.50) + "\n")
         bt = BudgetTracker(path, monthly_cap_usd=1.00)
         assert bt.is_exceeded()
 
@@ -55,7 +57,7 @@ def test_record_call_appends_jsonl():
             model="claude-haiku-4-5", input_tokens=100, output_tokens=10,
             cost_usd=0.001, op="contradict_prefilter", run_id="r1",
         )
-        lines = [json.loads(l) for l in Path(path).read_text().strip().splitlines()]
+        lines = [json.loads(line) for line in Path(path).read_text().strip().splitlines()]
         assert len(lines) == 1
         assert lines[0]["model"] == "claude-haiku-4-5"
         assert lines[0]["cost_usd"] == 0.001

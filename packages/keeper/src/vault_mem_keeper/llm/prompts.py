@@ -92,7 +92,7 @@ def summary_for_period(
     sections = []
     for m in memories:
         sections.append(
-            f"- [{m['type']}] {m['title']}\n  id: {m['id']}\n  {_truncate(m.get('content', ''), 300)}"
+            f"- [{m['type']}] {m['title']}\n  id: {m['id']}\n  {_truncate(m.get('content', ''), 300)}"  # noqa: E501
         )
     body = "\n\n".join(sections)
     return f"""{header} for project: {project}

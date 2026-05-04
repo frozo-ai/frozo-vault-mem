@@ -25,7 +25,7 @@ _PRICES = {
 }
 
 
-class BudgetExceeded(RuntimeError):
+class BudgetExceeded(RuntimeError):  # noqa: N818
     """Raised when the monthly budget cap is reached."""
 
 
@@ -75,7 +75,9 @@ class AnthropicClient:
     def sonnet(self, prompt: str, *, op: str, run_id: str, max_tokens: int = 1500) -> LlmResponse:
         return self._call(self._sonnet_model, prompt, op=op, run_id=run_id, max_tokens=max_tokens)
 
-    def _call(self, model: str, prompt: str, *, op: str, run_id: str, max_tokens: int) -> LlmResponse:
+    def _call(  # noqa: E501
+        self, model: str, prompt: str, *, op: str, run_id: str, max_tokens: int,
+    ) -> LlmResponse:
         if self._budget.is_exceeded():
             raise BudgetExceeded(
                 f"Monthly cap reached (${self._budget.month_to_date():.4f} >= cap)"
