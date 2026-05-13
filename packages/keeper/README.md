@@ -96,17 +96,34 @@ tail -f ~/Library/Logs/vault-mem-keeper.err.log
 ```
 
 If you'd rather keep the key out of `~/Library/LaunchAgents/` entirely
-(safer for backups + Time Machine), use a wrapper script and source a
-`.env` file:
+(safer for backups + Time Machine), use the env-file plist variant.
+`bin/run-keeper.sh` sources `$VAULT_MEM_KEEPER_ENV` (default
+`~/.config/vault-mem/keeper.env`) before exec:
 
 ```bash
-# Create ~/.config/vault-mem/keeper.env (chmod 600):
-echo 'OPENROUTER_API_KEY=sk-or-...' > ~/.config/vault-mem/keeper.env
+# 1. Create the env file (chmod 600):
+mkdir -p ~/.config/vault-mem
+cat > ~/.config/vault-mem/keeper.env <<'EOF'
+OPENROUTER_API_KEY=sk-or-...
+EOF
 chmod 600 ~/.config/vault-mem/keeper.env
 
-# Then point the plist at packages/keeper/bin/run-keeper.sh instead of uv
-# directly; the wrapper script sources keeper.env before exec.
+# 2. Edit ops/keeper/com.vaultmem.keeper.env-file.plist:
+#    - Replace REPLACE_USER everywhere
+#    - Replace the absolute path to packages/keeper/bin/run-keeper.sh
+
+# 3. Copy + load:
+cp ops/keeper/com.vaultmem.keeper.env-file.plist \
+   ~/Library/LaunchAgents/com.vaultmem.keeper.plist
+launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist
+launchctl start com.vaultmem.keeper
+tail -f ~/Library/Logs/vault-mem-keeper.err.log
 ```
+
+Trade-off: the env-file plist runs through a shell wrapper, so the
+launchd job is one process layer deeper. Worth it if you don't want
+secrets in `~/Library/LaunchAgents/` (the directory is included in
+default Time Machine backups and is world-readable by macOS conventions).
 
 To remove:
 
