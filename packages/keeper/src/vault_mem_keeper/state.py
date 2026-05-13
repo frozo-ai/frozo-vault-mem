@@ -12,22 +12,24 @@ from .logging import get_logger
 
 log = get_logger(__name__)
 
-_DEFAULTS: dict[str, Any] = {
-    "last_contradict_at": None,
-    "summaries": {},   # {project: {period: iso_ts}}
-}
+
+def _fresh_defaults() -> dict[str, Any]:
+    return {
+        "last_contradict_at": None,
+        "summaries": {},   # {project: {period: iso_ts}}
+    }
 
 
 def read_state(path: str) -> dict[str, Any]:
     if not Path(path).is_file():
-        return dict(_DEFAULTS)
+        return _fresh_defaults()
     try:
         raw = Path(path).read_text(encoding="utf-8")
         parsed = json.loads(raw)
     except (json.JSONDecodeError, OSError) as e:
         log.warn("state: corrupt file, returning defaults", path=path, err=str(e))
-        return dict(_DEFAULTS)
-    merged = dict(_DEFAULTS)
+        return _fresh_defaults()
+    merged = _fresh_defaults()
     merged.update(parsed)
     if not isinstance(merged.get("summaries"), dict):
         merged["summaries"] = {}

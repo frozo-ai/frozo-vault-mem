@@ -91,12 +91,83 @@ export interface AuditKeeperRunOp {
   session: string | null;
   duration_ms: number;
   summary: Record<string, unknown>;
+  pending_proposals?: number;
+  budget_mtd_usd?: number;
+}
+
+export interface AuditContradictScanOp {
+  op: "contradict_scan";
+  agent: string;
+  session: string | null;
+  memories_scanned: number;
+  pairs_judged: number;
+  proposals_written: number;
+  cost_usd: number;
+}
+
+export interface AuditSummarizeOp {
+  op: "summarize";
+  agent: string;
+  session: string | null;
+  project: string;
+  period: "daily" | "weekly" | "monthly";
+  memory_id: string;
+  covers_count: number;
+  cost_usd: number;
+}
+
+export interface AuditBudgetExceededOp {
+  op: "budget_exceeded";
+  agent: string;
+  session: string | null;
+  during?: string;
+  monthly_total_usd?: number;
+  cap_usd?: number;
+}
+
+export interface AuditProposalAppliedOp {
+  op: "proposal_applied";
+  agent: string;
+  session: string | null;
+  proposal_id: string;
+  kind: string;
+  source_id: string;
+  target_id: string;
+  action_taken: string;
+}
+
+export interface AuditProposalRejectedOp {
+  op: "proposal_rejected";
+  agent: string;
+  session: string | null;
+  proposal_id: string;
+  reason?: string;
+}
+
+export interface AuditProposalNoteOp {
+  op: "proposal_note";
+  agent: string;
+  session: string | null;
+  proposal_id: string;
+  note: string;
+}
+
+export interface AuditProposalApplyFailedOp {
+  op: "proposal_apply_failed";
+  agent: string;
+  session: string | null;
+  proposal_id: string;
+  stage: string;
+  err: string;
 }
 
 export type AuditEntry =
   | AuditWriteOp | AuditReadOp | AuditSearchOp | AuditPromoteOp
   | AuditContextOp | AuditFailedOp
-  | AuditDecayOp | AuditArchiveOp | AuditLinkRebuildOp | AuditKeeperRunOp;
+  | AuditDecayOp | AuditArchiveOp | AuditLinkRebuildOp | AuditKeeperRunOp
+  | AuditContradictScanOp | AuditSummarizeOp | AuditBudgetExceededOp
+  | AuditProposalAppliedOp | AuditProposalRejectedOp
+  | AuditProposalNoteOp | AuditProposalApplyFailedOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}

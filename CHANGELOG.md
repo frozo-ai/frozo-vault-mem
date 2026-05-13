@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 5 (Sonnet contradiction engine + summarization)
+
+- **Contradiction detection** (`ops/contradict`): pairwise Haiku pre-filter +
+  Sonnet judge across canonical memories whose `updated` advanced since the last
+  pass. High/medium-severity contradictions land in `_system/proposals.jsonl`.
+- **Per-project summaries** (`ops/summarize`): daily / weekly / monthly rollups
+  gated by both time and a new-memory threshold. Outputs a typed `summary`
+  memory under `memory/summaries/` with a `covers: [<ids>]` list.
+- **Interactive proposal walker** (`keeper review`): accept / reject / skip /
+  view / notes / quit on each pending proposal. Accept on `supersede_M_with_N`
+  archives the loser, sets its `status: superseded`, and appends to the winner's
+  `supersedes` list.
+- **Cost tracking** (`llm/budget`): per-call USD accounting in
+  `_system/budget.jsonl`, configurable monthly soft cap (`keeper.budget.monthly_usd_cap`,
+  default `$5.00`). Subsequent calls short-circuit when the cap is reached.
+- **Keeper state** (`_system/state.json`): tracks `last_contradict_at` and
+  per-project / per-period `summaries.{project}.{period}` watermarks so re-runs
+  stay incremental.
+- **New audit ops**: `contradict_scan`, `summarize`, `budget_exceeded`,
+  `proposal_applied`, `proposal_rejected`, `proposal_note`, `proposal_apply_failed`.
+- **`keeper_run` audit summary** now surfaces `pending_proposals` and
+  `budget_mtd_usd` for at-a-glance status.
+
+### Fixed
+
+- `state.read_state()` no longer returns a shared mutable reference to the
+  default `summaries` dict.
+
 ## [0.1.0] - 2026-04-28
 
 First public release. Originally built as a personal-use weekend project; now released for anyone who wants a local-first shared memory layer for their AI agents. The original PRD is preserved in `docs/origin/`.

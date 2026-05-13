@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 
+from .cli.review import cmd_review
 from .config import load_keeper_config
 from .frontmatter import load_schemas
 from .logging import configure as configure_logging
@@ -51,8 +52,29 @@ def cmd_run(args: argparse.Namespace) -> int:
             sys.stdout.write(f"  decay   : decayed {op.decayed}\n")
         elif name == "archive":
             sys.stdout.write(f"  archive : archived {op.archived}\n")
+        elif name == "contradict":
+            sys.stdout.write(
+                f"  contradict: proposals {op.proposals_written}  "
+                f"pairs judged {op.pairs_judged}  cost ${op.cost_usd:.4f}\n"
+            )
+        elif name == "summarize":
+            sys.stdout.write(
+                f"  summarize : wrote {op.summaries_written}  "
+                f"cost ${op.cost_usd:.4f}\n"
+            )
     sys.stdout.write(f"  total   : {report.duration_ms} ms\n")
     return 0
+
+
+def cmd_review_cli(args: argparse.Namespace) -> int:
+    configure_logging()
+    vault = _resolve_vault(args.vault)
+    return cmd_review(
+        vault,
+        filter_kind=args.filter,
+        filter_severity=args.severity,
+        filter_project=args.project,
+    )
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -135,6 +157,17 @@ def main(argv: list[str] | None = None) -> int:
     p_doctor = sub.add_parser("doctor", help="Health check")
     _vault_arg(p_doctor)
     p_doctor.set_defaults(func=cmd_doctor)
+
+    p_review = sub.add_parser("review", help="Walk pending contradiction proposals interactively")
+    _vault_arg(p_review)
+    p_review.add_argument("--filter", default=None,
+                          help="Filter by proposal kind (e.g. 'contradict')")
+    p_review.add_argument("--severity", default=None,
+                          choices=["low", "medium", "high"],
+                          help="Filter by severity")
+    p_review.add_argument("--project", default=None,
+                          help="Filter by source memory's project slug")
+    p_review.set_defaults(func=cmd_review_cli)
 
     args = parser.parse_args(argv)
     return args.func(args)

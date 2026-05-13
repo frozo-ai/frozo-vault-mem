@@ -22,6 +22,37 @@ uv run python -m vault_mem_keeper status --vault ~/vault-mem
 uv run python -m vault_mem_keeper doctor --vault ~/vault-mem
 ```
 
+## Review contradiction proposals (Phase 5)
+
+When the `contradict` op flags a likely conflict between two memories, the
+proposal lands in `_system/proposals.jsonl` for human review. Walk the queue:
+
+```bash
+uv run python -m vault_mem_keeper review --vault ~/vault-mem
+uv run python -m vault_mem_keeper review --vault ~/vault-mem --severity high
+uv run python -m vault_mem_keeper review --vault ~/vault-mem --project myapp
+```
+
+Per proposal: `a`ccept · `r`eject · `s`kip · `v`iew (opens in `$EDITOR`) ·
+`n`otes · `q`uit. Accepting a `supersede_M_with_N` proposal archives the
+loser, marks it `status: superseded`, and appends to the winner's
+`supersedes` list. All actions append to the audit log (`proposal_applied` /
+`proposal_rejected` / `proposal_note`).
+
+### Cost ceiling (Phase 5)
+
+The `contradict` and `summarize` ops make Anthropic API calls (Haiku for the
+pre-filter, Sonnet for the judge + summaries). The keeper enforces a soft
+monthly USD cap from `keeper.budget.monthly_usd_cap` in
+`_system/config.yaml` (default: `$5.00`). Each call is logged to
+`_system/budget.jsonl`. When the cap is reached, the keeper short-circuits
+remaining LLM calls and writes a `budget_exceeded` audit entry — the other
+ops (triage / link / decay / archive) still run normally.
+
+`ANTHROPIC_API_KEY` must be in the keeper's environment for Phase 5 ops to
+run; otherwise `contradict` and `summarize` skip gracefully and the rest of
+the pass is unaffected.
+
 ## Schedule via launchd (macOS)
 
 See `ops/keeper/com.vaultmem.keeper.plist` at the repo root. Customize the absolute
