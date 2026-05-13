@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `state.read_state()` no longer returns a shared mutable reference to the
   default `summaries` dict.
 
+### Changed
+
+- **LLM provider auto-selection**: keeper now picks between OpenRouter
+  (`OPENROUTER_API_KEY`, OpenAI-compatible `/chat/completions`) and the
+  native Anthropic SDK (`ANTHROPIC_API_KEY`, `/v1/messages`) based on
+  which env var is set. OpenRouter takes priority when both are present.
+  Bare model names (e.g. `claude-haiku-4-5`) auto-prefix to
+  `anthropic/claude-haiku-4-5` for OpenRouter. The `LlmClient` protocol
+  is the new duck-typed surface that `ops/contradict` + `ops/summarize`
+  depend on.
+
 ## [0.1.0] - 2026-04-28
 
 First public release. Originally built as a personal-use weekend project; now released for anyone who wants a local-first shared memory layer for their AI agents. The original PRD is preserved in `docs/origin/`.

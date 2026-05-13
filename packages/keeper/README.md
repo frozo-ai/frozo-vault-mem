@@ -49,9 +49,29 @@ monthly USD cap from `keeper.budget.monthly_usd_cap` in
 remaining LLM calls and writes a `budget_exceeded` audit entry — the other
 ops (triage / link / decay / archive) still run normally.
 
-`ANTHROPIC_API_KEY` must be in the keeper's environment for Phase 5 ops to
-run; otherwise `contradict` and `summarize` skip gracefully and the rest of
-the pass is unaffected.
+An LLM API key must be in the keeper's environment for Phase 5 ops to run.
+Otherwise `contradict` and `summarize` skip gracefully and the rest of the
+pass is unaffected.
+
+### Providers (Anthropic native vs OpenRouter)
+
+The keeper auto-picks the LLM provider from env vars:
+
+| Env var (priority order)   | Provider used                                             |
+| --------------------------- | --------------------------------------------------------- |
+| `OPENROUTER_API_KEY`        | OpenRouter via OpenAI-compatible `/chat/completions`      |
+| `ANTHROPIC_API_KEY`         | Native Anthropic SDK (`/v1/messages`)                     |
+| (neither)                   | Phase 5 ops skip; triage/link/decay/archive still run     |
+
+If `OPENROUTER_API_KEY` is set, the keeper auto-prefixes bare model names
+with `anthropic/` (so `claude-haiku-4-5` becomes `anthropic/claude-haiku-4-5`).
+Set already-prefixed names in `keeper.contradict.haiku_model` /
+`sonnet_model` if you want a different vendor or a specific OpenRouter
+slug (e.g. `anthropic/claude-sonnet-4.5`).
+
+OpenRouter's `usage.cost` is honored when present; falls back to the
+internal Anthropic price table otherwise. Soft cap enforcement is
+identical across providers.
 
 ## Schedule via launchd (macOS)
 

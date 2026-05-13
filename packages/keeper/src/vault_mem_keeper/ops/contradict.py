@@ -13,7 +13,7 @@ from ..audit import Auditor
 from ..config import KeeperConfig
 from ..fts import FtsReader
 from ..lance import LanceReader
-from ..llm.client import AnthropicClient, BudgetExceeded
+from ..llm.client import BudgetExceeded, LlmClient
 from ..llm.prompts import contradict_judge, contradict_prefilter, parse_judge_response
 from ..logging import get_logger
 from ..paths import VaultPaths
@@ -51,7 +51,7 @@ def run_contradict(
     schemas: dict[str, Any],  # noqa: ARG001  # accepted for op-signature uniformity
     audit: Auditor,
     *,
-    llm_client: AnthropicClient | None = None,
+    llm_client: LlmClient | None = None,
     dry_run: bool,
     run_id: str,
 ) -> ContradictReport:

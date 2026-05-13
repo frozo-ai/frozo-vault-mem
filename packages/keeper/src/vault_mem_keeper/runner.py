@@ -104,6 +104,8 @@ def run_pass(opts: RunOpts) -> RunReport:
         haiku_model=cfg.contradict.haiku_model,
         sonnet_model=cfg.contradict.sonnet_model,
     )
+    log.info("runner: llm client", type=type(llm_client).__name__,
+             has_key=llm_client.has_key())
 
     run_id = str(ulid.ULID())
     started = datetime.now(UTC).isoformat().replace("+00:00", "Z")

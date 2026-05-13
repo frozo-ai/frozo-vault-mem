@@ -15,7 +15,7 @@ from ..audit import Auditor
 from ..config import KeeperConfig
 from ..frontmatter import serialize_memory
 from ..fts import FtsReader
-from ..llm.client import AnthropicClient, BudgetExceeded
+from ..llm.client import BudgetExceeded, LlmClient
 from ..llm.prompts import summary_for_period
 from ..logging import get_logger
 from ..paths import VaultPaths
@@ -79,7 +79,7 @@ def run_summarize(
     schemas: dict[str, Any],  # noqa: ARG001  # op trusts FTS rows; no per-field re-validation
     audit: Auditor,
     *,
-    llm_client: AnthropicClient | None = None,
+    llm_client: LlmClient | None = None,
     dry_run: bool,
     run_id: str,
 ) -> SummarizeReport:

@@ -7,12 +7,16 @@ Two methods: haiku() and sonnet(). Both:
 3. Parse usage tokens from response.
 4. Compute cost from hardcoded price table.
 5. Append per-call line to budget.jsonl.
-6. Return LlmResponse(text, cost_usd, ...)."""
+6. Return LlmResponse(text, cost_usd, ...).
+
+The `make_client` factory chooses between the native Anthropic SDK and
+an OpenRouter HTTP adapter based on which env var is set. Both clients
+satisfy the same duck-typed surface (`has_key`, `haiku`, `sonnet`)."""
 
 import os
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from anthropic import APIStatusError, APITimeoutError
 
@@ -119,16 +123,34 @@ class AnthropicClient:
         raise last_err if last_err else RuntimeError("retry loop fell through")
 
 
-def make_client(budget: BudgetTracker, haiku_model: str, sonnet_model: str) -> AnthropicClient:
-    """Factory using ANTHROPIC_API_KEY env var. Returns client with sdk=None
-    when the key is missing — call has_key() first."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+class LlmClient(Protocol):
+    """Duck-typed surface every LLM provider in this package must expose."""
+    def has_key(self) -> bool: ...
+    def haiku(self, prompt: str, *, op: str, run_id: str, max_tokens: int = 256) -> LlmResponse: ...  # noqa: E501
+    def sonnet(self, prompt: str, *, op: str, run_id: str, max_tokens: int = 1500) -> LlmResponse: ...  # noqa: E501
+
+
+def make_client(*, budget: BudgetTracker, haiku_model: str, sonnet_model: str) -> LlmClient:
+    """Pick an LLM provider based on env vars.
+
+    Priority:
+    1. `OPENROUTER_API_KEY` → OpenRouter via OpenAI-compatible HTTP.
+    2. `ANTHROPIC_API_KEY`  → native Anthropic SDK.
+    3. Neither → no-key Anthropic client (callers must check has_key())."""
+    or_key = os.environ.get("OPENROUTER_API_KEY")
+    if or_key:
+        from .openrouter import OpenRouterClient
+        return OpenRouterClient(
+            api_key=or_key, budget=budget,
+            haiku_model=haiku_model, sonnet_model=sonnet_model,
+        )
+    anth_key = os.environ.get("ANTHROPIC_API_KEY")
     sdk = None
-    if api_key:
+    if anth_key:
         from anthropic import Anthropic
-        sdk = Anthropic(api_key=api_key)
+        sdk = Anthropic(api_key=anth_key)
     return AnthropicClient(
         sdk=sdk, budget=budget,
         haiku_model=haiku_model, sonnet_model=sonnet_model,
-        api_key=api_key,
+        api_key=anth_key,
     )
