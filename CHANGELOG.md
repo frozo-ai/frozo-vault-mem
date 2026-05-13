@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Skills-file exporter (PRD §6.2, week 5 — headline demo asset)
+
+- **`vault-mem-mcp export-skill <project>`** CLI subcommand. Reads a vault's
+  memories filtered by project, bundles them target-agnostically, then writes
+  per-target output files:
+  - `--target=claude` (default): `SKILL.md` with YAML frontmatter (name +
+    description) + `description.yaml` manifest + `references/{decisions,
+    learnings, observations, entities, questions, todos, summaries}.md`.
+  - `--target=cursor`: single `.cursor/rules/vault-mem-<project>.mdc` with
+    `alwaysApply: true` frontmatter.
+  - `--target=windsurf`: single `.windsurfrules` (plain markdown, no frontmatter).
+  - `--target=generic`: `README.md` + machine-readable `manifest.json` +
+    per-bucket markdown files. Designed for OpenAI assistants / custom agents.
+- Deterministic sort within each bucket (`created DESC, id ASC`) so re-runs
+  produce byte-identical `references/*` output (only the `generatedAt`
+  timestamp in `SKILL.md` / `description.yaml` differs run-to-run).
+- `--include-inbox` flag opts into inbox memories (default: canonical only).
+- `--max-bytes-per-bucket` caps wildly-large vaults so a single bucket can't
+  blow up the bundle. Items beyond the cap are dropped whole (no mid-content
+  truncation) to keep what remains self-consistent.
+- Atomic writes (temp+rename) for every output file.
+- 16 vitest cases covering bucket sort, project isolation, inbox toggle,
+  byte-cap, per-target output shape, manifest schema, and invalid-target
+  rejection. Live-dogfooded against `~/vault-mem/` on 2026-05-13.
+
 ### Added — Phase 5 (Sonnet contradiction engine + summarization)
 
 - **Contradiction detection** (`ops/contradict`): pairwise Haiku pre-filter +

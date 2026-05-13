@@ -6,6 +6,7 @@ import { runInit } from "./cli/init.js";
 import { runDoctor } from "./cli/doctor.js";
 import { runReindex } from "./cli/reindex.js";
 import { runTailAudit } from "./cli/tail-audit.js";
+import { runExportSkill } from "./cli/export-skill.js";
 import { resolveVaultPath } from "./vault/paths.js";
 import { createLogger } from "./log.js";
 
@@ -69,6 +70,34 @@ async function main(argv: string[]): Promise<void> {
     .action(async (opts: { vault?: string; n: string; follow: boolean }) => {
       const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
       await runTailAudit({ vault, n: parseInt(opts.n, 10), follow: opts.follow });
+    });
+
+  program
+    .command("export-skill <project>")
+    .description("Export a skill bundle for a project (claude|cursor|windsurf|generic)")
+    .option("--vault <path>", "Vault root", undefined)
+    .option("--target <kind>", "Target runtime: claude|cursor|windsurf|generic", "claude")
+    .option("-o, --output <path>", "Output directory (default: ./<project>-skill)")
+    .option("--include-inbox", "Include inbox memories (default: canonical only)", false)
+    .option("--max-bytes-per-bucket <n>", "Hard cap on body bytes per bucket", "200000")
+    .action((project: string, opts: { vault?: string; target: string; output?: string; includeInbox: boolean; maxBytesPerBucket: string }) => {
+      const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
+      const r = runExportSkill({
+        project,
+        vault,
+        target: opts.target,
+        ...(opts.output !== undefined && { output: opts.output }),
+        includeInbox: opts.includeInbox,
+        maxBytesPerBucket: parseInt(opts.maxBytesPerBucket, 10),
+      });
+      console.log(`Exported ${r.stats.total} memories for project '${project}' (target: ${r.target}) → ${r.output}`);
+      const breakdown = Object.entries(r.stats.perBucket)
+        .filter(([, n]) => n > 0)
+        .map(([t, n]) => `${t}=${n}`)
+        .join(" ");
+      if (breakdown) console.log(`  buckets: ${breakdown}`);
+      console.log(`  files:   ${r.filesWritten.length}`);
+      for (const f of r.filesWritten) console.log(`    ${f}`);
     });
 
   program
