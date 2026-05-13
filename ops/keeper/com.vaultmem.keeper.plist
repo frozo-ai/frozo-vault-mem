@@ -18,6 +18,14 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>VAULT_MEM_PATH</key> <string>/Users/REPLACE_USER/vault-mem</string>
+    <!--
+      Phase 5: provide ONE of these for contradict/summarize to run.
+      OpenRouter takes priority if both are set. Leave the placeholder
+      strings empty (or delete the key) to disable Phase 5 ops cleanly.
+      DO NOT commit your real key to git — replace locally only.
+    -->
+    <key>OPENROUTER_API_KEY</key>  <string>REPLACE_WITH_OPENROUTER_KEY</string>
+    <key>ANTHROPIC_API_KEY</key>   <string></string>
   </dict>
   <key>StartInterval</key>    <integer>1800</integer>
   <key>StandardErrorPath</key><string>/Users/REPLACE_USER/Library/Logs/vault-mem-keeper.err.log</string>

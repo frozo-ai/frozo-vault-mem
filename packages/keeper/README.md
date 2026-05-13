@@ -81,7 +81,11 @@ paths and copy to `~/Library/LaunchAgents/`, then `launchctl load -w ...`.
 ## Install via launchd (macOS)
 
 ```bash
-# 1. Edit ops/keeper/com.vaultmem.keeper.plist — replace REPLACE_USER and paths
+# 1. Edit ops/keeper/com.vaultmem.keeper.plist:
+#    - Replace REPLACE_USER (3 places) with your username
+#    - Replace REPLACE_WITH_OPENROUTER_KEY with your real key
+#      (or move the key to ANTHROPIC_API_KEY if you prefer native).
+#    DO NOT commit your real key — the plist is in git as a template only.
 # 2. Copy and load:
 cp ops/keeper/com.vaultmem.keeper.plist ~/Library/LaunchAgents/
 launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist
@@ -89,6 +93,19 @@ launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist
 launchctl start com.vaultmem.keeper
 # 4. Check the log:
 tail -f ~/Library/Logs/vault-mem-keeper.err.log
+```
+
+If you'd rather keep the key out of `~/Library/LaunchAgents/` entirely
+(safer for backups + Time Machine), use a wrapper script and source a
+`.env` file:
+
+```bash
+# Create ~/.config/vault-mem/keeper.env (chmod 600):
+echo 'OPENROUTER_API_KEY=sk-or-...' > ~/.config/vault-mem/keeper.env
+chmod 600 ~/.config/vault-mem/keeper.env
+
+# Then point the plist at packages/keeper/bin/run-keeper.sh instead of uv
+# directly; the wrapper script sources keeper.env before exec.
 ```
 
 To remove:
