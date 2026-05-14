@@ -81,12 +81,39 @@ Three actors share one folder. Indexes (FTS5 + LanceDB) are derived; the `.md` f
 | Command | Use |
 |---|---|
 | `vault-mem-mcp init` | Materialize a fresh vault from the bundled template. |
-| `vault-mem-mcp doctor` | Health check (9 invariants). |
+| `vault-mem-mcp doctor` | Health check. |
 | `vault-mem-mcp reindex [--fts-only \| --semantic-only]` | Drop + rebuild indexes from `.md` files. |
 | `vault-mem-mcp tail-audit [-n N] [--follow]` | Tail the audit log. |
+| `vault-mem-mcp export-skill <project> --target=claude\|cursor\|windsurf\|generic` | Export a per-project skill bundle (see below). |
 | `vault-mem-mcp serve` (default) | Run the MCP server over stdio. |
 | `python -m vault_mem_keeper run [--dry-run]` | Run a keeper pass (also via launchd). |
+| `python -m vault_mem_keeper review` | Walk pending contradiction proposals interactively. |
 | `python -m vault_mem_keeper {status,doctor}` | Inspect keeper state. |
+
+## Export your memory as a skill bundle
+
+The thing that makes vault-mem more than another note-taker: you can export
+any project's memory as a drop-in skill for Claude / Cursor / Windsurf.
+
+```bash
+# Export every decision, learning, entity, and open question
+# for the "kincare" project as a Claude skill.
+vault-mem-mcp export-skill kincare --target=claude --output ./kincare-skill
+
+# Then drop ./kincare-skill into Claude Code or claude.ai.
+# The agent now knows everything the team has decided about kincare.
+```
+
+The exporter is **target-agnostic**: same vault, four output shapes.
+
+- `--target=claude` → `SKILL.md` (YAML frontmatter) + `description.yaml` + `references/{decisions,learnings,entities,…}.md`.
+- `--target=cursor` → `.cursor/rules/vault-mem-<project>.mdc` with `alwaysApply: true`.
+- `--target=windsurf` → `.windsurfrules`.
+- `--target=generic` → `README.md` + `manifest.json` + per-bucket markdown. For OpenAI assistants / custom agents.
+
+Output is **deterministic** within each bucket (`created DESC, id ASC`), so
+re-running on an unchanged vault produces byte-identical `references/*` —
+diff-friendly, CI-friendly.
 
 ## Memory types
 
@@ -96,9 +123,20 @@ Each has typed frontmatter (validated against JSON Schema), markdown body, and d
 
 ## Status
 
-**0.1.0** — first public release. 106 TypeScript tests + 46 Python tests, all passing. macOS-tested. Linux should work for the MCP server and the keeper script (the launchd plist is macOS-only — Linux/systemd unit files welcome as PRs). Windows untested.
+**Active development.** 122 TypeScript tests + 114 Python tests, all passing.
+macOS-tested. Linux should work for the MCP server and the keeper script
+(the launchd plist is macOS-only — Linux/systemd unit files welcome as PRs).
+Windows untested.
 
-**What's next:** Phase 4 (Telegram approval gate for destructive ops) and Phase 5 (Sonnet-powered contradiction detection + summarization) are on the PRD roadmap. See [docs/origin/personal-use-prd.md](docs/origin/personal-use-prd.md) §8.
+Phases 0–5 shipped: vault scaffolding, MCP server v0.1, hybrid FTS + semantic
+search, hygiene daemon (triage / link / decay / archive), Telegram approval
+gate, Sonnet contradiction engine + per-project summarization, and the
+skills-file exporter.
+
+**What's next:** Phase 6 polish (Obsidian Dataview dashboards + optional
+Obsidian plugin), broader connector ingestion, eval harness. The current
+roadmap lives in [`vault-mem-PRD.md`](./vault-mem-PRD.md); the original
+solo-build PRD is preserved in [docs/origin/](docs/origin/) for context.
 
 ## Contributing
 

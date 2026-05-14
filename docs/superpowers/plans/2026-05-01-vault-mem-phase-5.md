@@ -2978,7 +2978,7 @@ Replace the existing "What's next" line with:
 - [ ] **Step 3: Full test sweep + smoke**
 
 ```bash
-cd /Users/ashishdhiman/WORK/Frozo-projects/frozo-vault-mem
+cd "$REPO_ROOT"
 pnpm --filter @vault-mem/mcp test 2>&1 | grep "Tests" | head -1
 pnpm --filter @vault-mem/mcp typecheck 2>&1 | tail -1
 cd packages/keeper && uv run pytest --ignore=tests/test_e2e.py 2>&1 | grep -E "passed|failed" | tail -1
