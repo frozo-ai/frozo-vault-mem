@@ -8,6 +8,7 @@ import { runReindex } from "./cli/reindex.js";
 import { runTailAudit } from "./cli/tail-audit.js";
 import { runExportSkill } from "./cli/export-skill.js";
 import { runEvalCli } from "./cli/eval.js";
+import { runSupersedeCli } from "./cli/supersede.js";
 import { resolveVaultPath } from "./vault/paths.js";
 import { createLogger } from "./log.js";
 
@@ -132,6 +133,29 @@ async function main(argv: string[]): Promise<void> {
         minPassRate: parseFloat(opts.minPassRate),
       });
       if (result.exitCode !== 0) process.exit(result.exitCode);
+    });
+
+  program
+    .command("supersede <winner_id> <loser_id>")
+    .description("Mark loser as superseded by winner (archives loser, appends to winner.supersedes)")
+    .option("--vault <path>", "Vault root", undefined)
+    .option("--reason <text>", "Short note recorded in the audit log")
+    .action(async (winner: string, loser: string, opts: { vault?: string; reason?: string }) => {
+      const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
+      const r = await runSupersedeCli({
+        vault,
+        winner,
+        loser,
+        ...(opts.reason !== undefined && { reason: opts.reason }),
+      });
+      if (r.alreadyApplied) {
+        console.log(`Already applied: ${r.loserId} was already superseded by ${r.winnerId}`);
+      } else {
+        console.log(`Superseded ${r.loserId} → ${r.winnerId}`);
+        console.log(`  loser moved: ${r.loserFrom}`);
+        console.log(`            →: ${r.loserTo}`);
+        console.log(`  winner.supersedes count: ${r.supersedesCount}`);
+      }
     });
 
   program

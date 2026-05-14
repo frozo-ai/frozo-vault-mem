@@ -6,7 +6,15 @@ export type ErrorKind =
   | "not_in_inbox"
   | "promote_failed"
   | "inbox_write_failed"
-  | "internal_error";
+  | "internal_error"
+  // supersede tool
+  | "self_supersede"
+  | "winner_not_found"
+  | "winner_in_inbox"
+  | "winner_archived"
+  | "loser_not_found"
+  | "loser_in_inbox"
+  | "supersede_failed";
 
 export class ToolError extends Error {
   constructor(

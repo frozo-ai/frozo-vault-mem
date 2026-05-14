@@ -75,6 +75,7 @@ Three actors share one folder. Indexes (FTS5 + LanceDB) are derived; the `.md` f
 | `memory_search` | Search the vault (`mode: "fts" \| "semantic" \| "hybrid"`, default `hybrid`). |
 | `memory_promote` | Manually graduate a memory from inbox to canonical (the daemon does this automatically after 24h). |
 | `memory_context` | Load curated project context within a token budget; pass `query` for semantic-led ranking. |
+| `memory_supersede` | Mark one memory as superseded by another. Archives the loser, appends to winner's `supersedes`. Idempotent. |
 
 ## CLI
 
@@ -85,6 +86,7 @@ Three actors share one folder. Indexes (FTS5 + LanceDB) are derived; the `.md` f
 | `vault-mem-mcp reindex [--fts-only \| --semantic-only]` | Drop + rebuild indexes from `.md` files. |
 | `vault-mem-mcp tail-audit [-n N] [--follow]` | Tail the audit log. |
 | `vault-mem-mcp export-skill <project> --target=claude\|cursor\|windsurf\|generic` | Export a per-project skill bundle (see below). |
+| `vault-mem-mcp supersede <winner> <loser> [--reason]` | One-shot supersede from the command line (same mechanics as the MCP tool). |
 | `vault-mem-mcp serve` (default) | Run the MCP server over stdio. |
 | `python -m vault_mem_keeper run [--dry-run]` | Run a keeper pass (also via launchd). |
 | `python -m vault_mem_keeper review` | Walk pending contradiction proposals interactively. |

@@ -20,6 +20,7 @@ import {
   createPromoteTool,
   createContextTool,
 } from "../tools/index.js";
+import { createSupersedeTool, type SupersedeToolInput } from "../tools/supersede.js";
 import type { WriteToolInput } from "../tools/write.js";
 import type { ReadToolInput } from "../tools/read.js";
 import type { PromoteToolInput } from "../tools/promote.js";
@@ -148,6 +149,25 @@ const TOOL_DEFS = [
       },
     },
   },
+  {
+    name: "memory_supersede",
+    description:
+      "Mark `loser_id` as superseded by `winner_id`. Sets loser.status='superseded', " +
+      "moves the loser .md from memory/ to archive/, appends loser_id to winner.supersedes. " +
+      "Use when the user (a) explicitly says one memory replaces another, (b) makes a decision " +
+      "that reverses a prior one, or (c) accepts a contradiction-resolution proposal from the keeper. " +
+      "Idempotent: re-running on an already-applied pair is a no-op. Both ids must reference " +
+      "canonical (memory/) memories — promote inbox memories first.",
+    inputSchema: {
+      type: "object",
+      required: ["winner_id", "loser_id"],
+      properties: {
+        winner_id: { type: "string", description: "The memory that supersedes (stays active)." },
+        loser_id: { type: "string", description: "The memory being replaced (moves to archive)." },
+        reason: { type: "string", description: "Short human note recorded in the audit log." },
+      },
+    },
+  },
 ] as const;
 
 export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
@@ -220,6 +240,15 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     session,
   });
 
+  const supersedeTool = createSupersedeTool({
+    vault: opts.vault,
+    auditor,
+    index,
+    lance,
+    agent: sessionAgent,
+    session,
+  });
+
   const server = new Server(
     { name: "vault-mem-mcp", version: "0.1.0" },
     { capabilities: { tools: {} } },
@@ -249,6 +278,9 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
           break;
         case "memory_context":
           out = await contextTool.handle(a as unknown as ContextToolInput);
+          break;
+        case "memory_supersede":
+          out = await supersedeTool.handle(a as unknown as SupersedeToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);

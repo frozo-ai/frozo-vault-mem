@@ -95,6 +95,17 @@ export interface AuditKeeperRunOp {
   budget_mtd_usd?: number;
 }
 
+export interface AuditSupersedeOp {
+  op: "supersede";
+  agent: string;
+  session: string | null;
+  winner_id: string;
+  loser_id: string;
+  loser_from: string;
+  loser_to: string;
+  reason?: string;
+}
+
 export interface AuditContradictScanOp {
   op: "contradict_scan";
   agent: string;
@@ -167,7 +178,8 @@ export type AuditEntry =
   | AuditDecayOp | AuditArchiveOp | AuditLinkRebuildOp | AuditKeeperRunOp
   | AuditContradictScanOp | AuditSummarizeOp | AuditBudgetExceededOp
   | AuditProposalAppliedOp | AuditProposalRejectedOp
-  | AuditProposalNoteOp | AuditProposalApplyFailedOp;
+  | AuditProposalNoteOp | AuditProposalApplyFailedOp
+  | AuditSupersedeOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}

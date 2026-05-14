@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Supersede flow (PRD week 11)
+
+- **New MCP tool `memory_supersede`**: marks `loser_id` as superseded by
+  `winner_id`. Sets loser status to `superseded`, moves the .md from
+  `memory/<bucket>/` to `archive/`, appends `loser_id` to winner's
+  `supersedes` frontmatter list. Updates both the FTS index and Lance
+  metadata in-place so search reflects the new state immediately.
+- **Idempotent**: re-running on an already-applied pair returns
+  `already_applied: true` and touches no files. Safe to call from agents
+  that may retry on transient failures.
+- **Recovery-tolerant**: if loser is already in `archive/` from a prior
+  partial run but winner doesn't yet list it, the tool patches just the
+  winner side.
+- **CLI variant**: `vault-mem-mcp supersede <winner> <loser> [--reason]`
+  for manual ops and scripting.
+- **New audit op**: `supersede` with `{winner_id, loser_id, loser_from,
+  loser_to, reason?}`.
+- **Refuses**: self-supersede, inbox-side memories (promote first),
+  unknown ids, already-archived winner.
+- 13 vitest cases cover happy path, idempotency, partial-state recovery,
+  accumulation, lance metadata sync, audit shape, and 5 error paths.
+
 ### Added — Eval harness (PRD §6.6, week 8 — quality gate)
 
 - **`vault-mem-mcp eval run <project>`** CLI subcommand. Loads every gold
