@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Eval harness (PRD §6.6, week 8 — quality gate)
+
+- **`vault-mem-mcp eval run <project>`** CLI subcommand. Loads every gold
+  set under `<vault>/evals/<project>/*.json` (or one named set via
+  `--set <name>`), runs each question through `memory.context`, scores
+  retrieval against expected citations.
+- **Gold set format**: pinned `vault-mem-eval-set/1` schema. One JSON file
+  per set, with N questions each having `{id, question, expected_citations: [memId], ...}`.
+  Schema lives at `vault-template/_system/schema/eval-set.json`; a sample
+  set ships at `vault-template/evals/sample/smoke.json` so `init` users see
+  the file shape.
+- **Scoring**: per-question precision, recall, F1 against expected memory
+  ids within `top_k`. A question "passes" when recall==1 (all expected
+  citations surface within top_k). Aggregate metrics micro-averaged.
+- **CI gate**: `--min-pass-rate` (default `0.7`, per PRD §8 target) — exits
+  non-zero when fewer than 70% of questions pass. Also `--min-f1` for
+  precision-aware gating; off by default.
+- **Output**: stdout text by default (✓/◐/✗ per question, missing-citation
+  callout, overall metrics line). `--output report.json` emits a stable
+  JSON shape for CI consumption.
+- **Per-question overrides**: `top_k`, `max_tokens`, `include_inbox` can be
+  set in the gold set or overridden globally via CLI flags.
+- Tests: 15 vitest cases (scorer + loader). Live dogfood against
+  `~/vault-mem/` returned 4/4 pass, recall=100%, F1=32% (precision drag
+  from `memory.context` returning a wide bundle by design — recall is the
+  meaningful signal here, which is why pass-rate is the default gate).
+
 ### Added — Skills-file exporter (PRD §6.2, week 5 — headline demo asset)
 
 - **`vault-mem-mcp export-skill <project>`** CLI subcommand. Reads a vault's

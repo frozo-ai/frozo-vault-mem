@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "vault-mem://schema/eval-set.json",
+  "title": "Vault-Mem eval set",
+  "description": "A gold-set of Q&A pairs for testing memory retrieval quality on one project.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "name", "questions"],
+  "properties": {
+    "schema": {
+      "const": "vault-mem-eval-set/1",
+      "description": "Pinned schema id so future versions can be detected and migrated."
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Project slug the eval set targets."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short name for this set (e.g. 'smoke', 'regression', 'release-2026-q3')."
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the set was authored. Informational only — doesn't affect scoring."
+    },
+    "description": {
+      "type": "string",
+      "description": "Free-form note describing what this set covers."
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/EvalQuestion" }
+    }
+  },
+  "definitions": {
+    "EvalQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "expected_citations"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+          "description": "Stable identifier for this question (used in reports, CI diffs)."
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Natural-language query that will be passed to memory.context."
+        },
+        "expected_citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^mem_\\d{4}-\\d{2}-\\d{2}_[0-9a-f]{6}$"
+          },
+          "description": "Memory ids that should appear in the returned context bundle for this query to count as a hit."
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "How many returned items count toward precision. Default 10."
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 16000,
+          "description": "Token budget for memory.context. Default 4000."
+        },
+        "include_inbox": {
+          "type": "boolean",
+          "description": "Whether to include inbox memories. Default false."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form note about what this question tests or why these citations were chosen."
+        }
+      }
+    }
+  }
+}

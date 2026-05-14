@@ -7,6 +7,7 @@ import { runDoctor } from "./cli/doctor.js";
 import { runReindex } from "./cli/reindex.js";
 import { runTailAudit } from "./cli/tail-audit.js";
 import { runExportSkill } from "./cli/export-skill.js";
+import { runEvalCli } from "./cli/eval.js";
 import { resolveVaultPath } from "./vault/paths.js";
 import { createLogger } from "./log.js";
 
@@ -98,6 +99,39 @@ async function main(argv: string[]): Promise<void> {
       if (breakdown) console.log(`  buckets: ${breakdown}`);
       console.log(`  files:   ${r.filesWritten.length}`);
       for (const f of r.filesWritten) console.log(`    ${f}`);
+    });
+
+  const evalCmd = program
+    .command("eval")
+    .description("Eval harness for retrieval quality (gold-set Q&A)");
+
+  evalCmd
+    .command("run <project>")
+    .description("Run every gold set under <vault>/evals/<project>/")
+    .option("--vault <path>", "Vault root", undefined)
+    .option("--set <name>", "Only run the gold set with this name")
+    .option("--top-k <n>", "How many returned items count toward precision (overrides per-question)")
+    .option("--max-tokens <n>", "Token budget for memory.context (overrides per-question)")
+    .option("--output <path>", "Write JSON report to this path")
+    .option("--min-f1 <f>", "Exit non-zero if aggregate F1 < this (0..1)", "0")
+    .option(
+      "--min-pass-rate <f>",
+      "Exit non-zero if pass-rate (% questions with recall=1) < this. Default 0.7 per PRD §8 quality gate.",
+      "0.7"
+    )
+    .action(async (project: string, opts: { vault?: string; set?: string; topK?: string; maxTokens?: string; output?: string; minF1: string; minPassRate: string }) => {
+      const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
+      const result = await runEvalCli({
+        vault,
+        project,
+        ...(opts.set !== undefined && { setName: opts.set }),
+        ...(opts.topK !== undefined && { topK: parseInt(opts.topK, 10) }),
+        ...(opts.maxTokens !== undefined && { maxTokens: parseInt(opts.maxTokens, 10) }),
+        ...(opts.output !== undefined && { outputPath: opts.output }),
+        minF1: parseFloat(opts.minF1),
+        minPassRate: parseFloat(opts.minPassRate),
+      });
+      if (result.exitCode !== 0) process.exit(result.exitCode);
     });
 
   program

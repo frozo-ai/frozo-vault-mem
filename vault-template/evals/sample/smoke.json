@@ -1,0 +1,15 @@
+{
+  "schema": "vault-mem-eval-set/1",
+  "project": "sample",
+  "name": "smoke",
+  "created": "2026-05-14T00:00:00Z",
+  "description": "Tiny demo gold set so users see the file shape. Replace with real questions for your own projects.",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What MCP tools does vault-mem expose?",
+      "expected_citations": ["mem_2026-04-27_a8f3c0"],
+      "notes": "Should retrieve the foundational decision about the 5 MCP tools. Replace the id with a real one from your vault."
+    }
+  ]
+}
