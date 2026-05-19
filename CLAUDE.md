@@ -43,7 +43,7 @@ Vault-mem is a **two-product play**:
 - YC S26 application close: **2026-09-30**
 
 **What's actually open in this repo (OSS):**
-1. **DPDP/GDPR per-subject erasure cascade** (Risk #6, High severity). No commits address this yet. Must cascade through `.md` files → embeddings (LanceDB) → FTS index → audit log. Owed before public Vault Cloud launch.
+1. **DPDP/GDPR per-subject erasure cascade** (Risk #6, High severity). **Design landed** at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md` (all 6 open questions resolved 2026-05-19). Implementation pending: ~3.5 weeks across 5 phases (subject-index foundation → cascade → gating → Cloud parity → docs). Owed before public Vault Cloud launch.
 2. **Open Q #2** (PRD §10): should the keeper auto-classify writes into buckets, or only humans/agents? Phase 5 shipped without resolving this — current behaviour is humans/agents only. Decision pending.
 3. **Open Q #4** (PRD §10): pricing currency (USD vs ₹) for India tier. Founder call.
 4. **Landing page** for `vault-mem.dev` (or chosen domain) — confirm exists / verify status.
@@ -192,7 +192,7 @@ These choices are deliberate — don't substitute without a reason:
 | 3 | Brand name: keep "vault-mem" or rename before public launch? | ✅ resolved | Kept "vault-mem"; landed at `frozo-ai/frozo-vault-mem` (org-scoped vs personal). |
 | 4 | Pricing currency: USD primary or ₹ primary for India tier? | ⏳ open | Founder call, pre-launch. |
 | 5 | Exporter targets: Claude/Cursor/Windsurf only, or also OpenAI/generic? | ✅ resolved | Shipped all four: `claude`, `cursor`, `windsurf`, `generic`. |
-| 6 | DPDP/GDPR erasure cascade design (Risk #6) | ⏳ open | High severity. No commits yet. Owed before Cloud launch. |
+| 6 | DPDP/GDPR erasure cascade design (Risk #6) | 🟡 design resolved | Spec at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md`. Implementation still pending (~3.5w). |
 | 7 | (covered in CLAUDE.md — vault-mem as lead bet) | ✅ resolved | Decided 2026-05-13. |
 | 8 | Telemetry default — opt-in vs opt-out for OSS | ✅ resolved | Opt-in only, zero telemetry by default. |
 
