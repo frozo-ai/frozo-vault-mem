@@ -27,17 +27,22 @@ def pair_dedup_key(
 
 @dataclass
 class Proposal:
-    kind: str                       # "contradict" (more in future)
-    source_id: str
-    target_id: str
-    severity: str                   # "low" | "medium" | "high"
-    reasoning: str
-    suggested_action: str
-    model: str
-    cost_usd: float
-    run_id: str
-    source_updated: str
-    target_updated: str
+    kind: str                       # "contradict" | "subject_erase_request"
+    source_id: str = ""
+    target_id: str = ""
+    severity: str = ""              # "low" | "medium" | "high"
+    reasoning: str = ""
+    suggested_action: str = ""
+    model: str = ""
+    cost_usd: float = 0.0
+    run_id: str = ""
+    source_updated: str = ""
+    target_updated: str = ""
+    # DPDP `subject_erase_request` fields (Phase 3). Plaintext while
+    # pending; proposals.jsonl is gitignored. Audit log uses hashes only.
+    subject_id: str | None = None
+    reason: str | None = None
+    requested_by_agent: str | None = None
     # filled by ProposalsHandle.append:
     v: int = 1
     id: str = ""

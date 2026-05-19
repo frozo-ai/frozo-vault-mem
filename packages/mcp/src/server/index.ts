@@ -21,6 +21,7 @@ import {
   createContextTool,
 } from "../tools/index.js";
 import { createSupersedeTool, type SupersedeToolInput } from "../tools/supersede.js";
+import { createEraseSubjectTool, type EraseSubjectToolInput } from "../tools/erase-subject.js";
 import type { WriteToolInput } from "../tools/write.js";
 import type { ReadToolInput } from "../tools/read.js";
 import type { PromoteToolInput } from "../tools/promote.js";
@@ -168,6 +169,32 @@ const TOOL_DEFS = [
       },
     },
   },
+  {
+    name: "memory_erase_subject",
+    description:
+      "DPDP/GDPR per-subject erasure request. Records that a subject (identified by canonical " +
+      "subject_id like `email:foo@bar.com`, `slack:T0X:U0A`, `github:login`) should be erased " +
+      "from the vault. **DOES NOT** run the cascade immediately — writes a proposal to the " +
+      "approval queue and returns `pending_approval`. An operator must run " +
+      "`vault-mem-keeper review --filter subject_erase_request` and approve before the cascade " +
+      "fires. Use ONLY when the user explicitly requests erasure of someone's data (DPDP SAR, " +
+      "GDPR Article 17 request, departing employee with no retention need, etc.). Reason is " +
+      "required for the audit trail (Q2 of the DPDP design).",
+    inputSchema: {
+      type: "object",
+      required: ["subject_id", "reason"],
+      properties: {
+        subject_id: {
+          type: "string",
+          description: "Canonical subject id, e.g. `email:foo@bar.com` or `github:login`.",
+        },
+        reason: {
+          type: "string",
+          description: "Free-text reason; hashed in the audit log, plaintext in the controller-private erasure_requests.jsonl.",
+        },
+      },
+    },
+  },
 ] as const;
 
 export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
@@ -249,6 +276,13 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     session,
   });
 
+  const eraseSubjectTool = createEraseSubjectTool({
+    vault: opts.vault,
+    auditor,
+    agent: sessionAgent,
+    session,
+  });
+
   const server = new Server(
     { name: "vault-mem-mcp", version: "0.1.0" },
     { capabilities: { tools: {} } },
@@ -281,6 +315,9 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
           break;
         case "memory_supersede":
           out = await supersedeTool.handle(a as unknown as SupersedeToolInput);
+          break;
+        case "memory_erase_subject":
+          out = await eraseSubjectTool.handle(a as unknown as EraseSubjectToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);

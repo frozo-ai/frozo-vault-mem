@@ -14,7 +14,11 @@ export type ErrorKind =
   | "winner_archived"
   | "loser_not_found"
   | "loser_in_inbox"
-  | "supersede_failed";
+  | "supersede_failed"
+  // erase-subject tool
+  | "invalid_subject_id"
+  | "missing_reason"
+  | "erase_request_failed";
 
 export class ToolError extends Error {
   constructor(

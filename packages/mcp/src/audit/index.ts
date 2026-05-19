@@ -201,6 +201,16 @@ export interface AuditSubjectMentionRemovedOp {
   memory_id: string;
 }
 
+/** Agent-initiated erasure REQUEST (pre-approval). Records that an
+ *  agent asked for erasure; the cascade hasn't run yet. */
+export interface AuditSubjectEraseRequestedOp {
+  op: "subject_erase_requested";
+  subject_id_hash: string;
+  proposal_id: string;
+  agent: string;
+  session: string | null;
+}
+
 /** Per-memory cascade event during an erase-subject run. */
 export interface AuditSubjectErasedOp {
   op: "subject_erased";
@@ -239,8 +249,9 @@ export type AuditEntry =
   | AuditProposalNoteOp | AuditProposalApplyFailedOp
   | AuditSupersedeOp
   | AuditSubjectIndexBuildOp | AuditSubjectMentionAddedOp
-  | AuditSubjectMentionRemovedOp | AuditSubjectErasedOp
-  | AuditSubjectErasedCompleteOp | AuditManualRedactionRequiredOp;
+  | AuditSubjectMentionRemovedOp | AuditSubjectEraseRequestedOp
+  | AuditSubjectErasedOp | AuditSubjectErasedCompleteOp
+  | AuditManualRedactionRequiredOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}

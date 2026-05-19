@@ -18,6 +18,7 @@ from ..config import load_keeper_config
 from ..frontmatter import parse_memory_file, serialize_memory
 from ..llm.budget import BudgetTracker
 from ..logging import get_logger
+from ..ops.erase_subject import _record_erasure_request, run_erase_subject
 from ..paths import MEMORY_TYPES, VaultPaths, resolve_vault_path, vault_paths
 from ..proposals import Proposal, open_proposals
 
@@ -60,9 +61,26 @@ def _load_title(paths: VaultPaths, mid: str) -> str:
 
 
 def _render(p: Proposal, idx: int, total: int, *, paths: VaultPaths, out: TextIO) -> None:
+    bar = "─" * 60
+    if p.kind == "subject_erase_request":
+        out.write(
+            f"\n[{idx}/{total}] {p.id}  {p.kind}\n"
+            f"{bar}\n"
+            f"  Subject:           {p.subject_id}\n"
+            f"  Requested by:      {p.requested_by_agent or '(unknown)'}\n"
+            f"  Reason:            {p.reason}\n"
+            f"  Suggested action:  {p.suggested_action}\n\n"
+            f"  ⚠ Approving fires the cascade (full_delete + scrub per spec §4).\n"
+            f"  ⚠ This is UNRECOVERABLE. The cascade will move memories to\n"
+            f"  ⚠ archive/erased/<id>.md as redacted stubs, drop FTS+Lance rows,\n"
+            f"  ⚠ and emit subject_erased audit entries with hashed ids.\n\n"
+            f"  [a]ccept  [r]eject  [s]kip  [n]otes  [q]uit\n"
+        )
+        out.flush()
+        return
+    # Default: contradict shape
     source_title = _load_title(paths, p.source_id)
     target_title = _load_title(paths, p.target_id)
-    bar = "─" * 60
     out.write(
         f"\n[{idx}/{total}] {p.id}  {p.kind}  severity={p.severity}\n"
         f"{bar}\n"
@@ -156,6 +174,12 @@ def _passes_filters(p: Proposal, *, kind: str | None,
     if severity and p.severity != severity:
         return False
     if project:
+        # Project filter is contradict-shaped (looks up source_id's
+        # frontmatter project). Other kinds (e.g. subject_erase_request)
+        # don't have a source memory; pass them through when a project
+        # filter is specified.
+        if p.kind != "contradict":
+            return True
         loc = _find_memory_file(paths, p.source_id)
         if not loc:
             return False
@@ -257,8 +281,55 @@ def cmd_review(  # noqa: PLR0913
     return 0
 
 
+def _apply_subject_erase(
+    p: Proposal, *, paths: VaultPaths, audit: Auditor,
+    run_id: str, out: TextIO,
+) -> bool:
+    """Run the DPDP cascade for an approved subject_erase_request."""
+    if not p.subject_id or not p.reason:
+        out.write("  proposal missing subject_id or reason — cannot apply\n")
+        audit.write({
+            "op": "proposal_apply_failed",
+            "agent": "human", "session": run_id,
+            "proposal_id": p.id,
+            "stage": "subject_erase_validation",
+            "err": "missing subject_id or reason",
+        })
+        return False
+    # Record plaintext to controller-private erasure_requests.jsonl
+    _record_erasure_request(paths, p.subject_id, p.reason, _now_iso())
+    report = run_erase_subject(
+        paths,
+        p.subject_id,
+        p.reason,
+        auditor=audit,
+    )
+    out.write(
+        f"  cascade: full_delete={report.full_deletes} scrub={report.scrubs} "
+        f"manual_review={report.manual_review_required} "
+        f"fts_dropped={report.fts_rows_dropped} "
+        f"lance_dropped={report.lance_rows_dropped}\n"
+    )
+    audit.write({
+        "op": "proposal_applied",
+        "agent": "human", "session": run_id,
+        "proposal_id": p.id,
+        "kind": p.kind,
+        "source_id": "",
+        "target_id": "",
+        "action_taken": (
+            f"erase_subject:{report.full_deletes}+{report.scrubs}"
+        ),
+    })
+    return True
+
+
 def _apply(p: Proposal, *, paths: VaultPaths, audit: Auditor,
            run_id: str, out: TextIO) -> bool:
+    if p.kind == "subject_erase_request":
+        return _apply_subject_erase(
+            p, paths=paths, audit=audit, run_id=run_id, out=out,
+        )
     action = p.suggested_action
     if action == "supersede_M_with_N":
         # M (source) is older/wrong; N (target) replaces it
