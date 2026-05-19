@@ -106,4 +106,52 @@ describe("Auditor", () => {
     const keeperRun = JSON.parse(lines[3]!);
     expect(keeperRun.summary.triage.promoted).toBe(2);
   });
+
+  it("serializes DPDP subject-erasure ops (subject_erased, subject_erased_complete, manual_redaction_required)", () => {
+    const a = new Auditor(logPath);
+    a.write({
+      op: "subject_mention_added",
+      subject_id_hash: "sha256:abc",
+      memory_id: "mem_2026-05-19_aaaaaa",
+      kind: "tag",
+      field_path: "tags",
+    });
+    a.write({
+      op: "subject_erased",
+      subject_id_hash: "sha256:abc",
+      memory_id: "mem_2026-05-19_aaaaaa",
+      action: "full_delete",
+      reason_hash: "sha256:def",
+    });
+    a.write({
+      op: "subject_erased_complete",
+      subject_id_hash: "sha256:abc",
+      count: 1,
+      duration_ms: 42,
+      verify_status: "ok",
+    });
+    a.write({
+      op: "manual_redaction_required",
+      subject_id_hash: "sha256:abc",
+      memory_id: "mem_2026-05-19_bbbbbb",
+      field_path: "body",
+    });
+    const lines = readFileSync(logPath, "utf8").trim().split("\n");
+    expect(lines).toHaveLength(4);
+    const added = JSON.parse(lines[0]!);
+    expect(added.op).toBe("subject_mention_added");
+    expect(added.kind).toBe("tag");
+    const erased = JSON.parse(lines[1]!);
+    expect(erased.op).toBe("subject_erased");
+    expect(erased.action).toBe("full_delete");
+    // Crucially: no plaintext subject_id or reason leaks into the audit log.
+    expect(erased.subject_id).toBeUndefined();
+    expect(erased.reason).toBeUndefined();
+    expect(erased.subject_id_hash.startsWith("sha256:")).toBe(true);
+    const complete = JSON.parse(lines[2]!);
+    expect(complete.verify_status).toBe("ok");
+    expect(complete.count).toBe(1);
+    const manual = JSON.parse(lines[3]!);
+    expect(manual.field_path).toBe("body");
+  });
 });

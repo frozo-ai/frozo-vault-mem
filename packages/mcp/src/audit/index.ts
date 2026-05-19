@@ -172,6 +172,64 @@ export interface AuditProposalApplyFailedOp {
   err: string;
 }
 
+// ---- DPDP/GDPR per-subject erasure ops (see specs/2026-05-19-dpdp-erasure-cascade-design.md) ----
+// All subject-related ops use hashed identifiers — `subject_id_hash` and
+// `reason_hash` are sha256:... — never plaintext. Plaintext reason lives
+// in the controller-private `_system/erasure_requests.jsonl` instead.
+
+/** Index-write trail emitted on initial subject-mentions backfill. */
+export interface AuditSubjectIndexBuildOp {
+  op: "subject_index_build";
+  subject_id_hash?: string;
+  mention_count: number;
+  mention_kinds?: string[];
+}
+
+/** A subject mention added at memory_write time or by the keeper link op. */
+export interface AuditSubjectMentionAddedOp {
+  op: "subject_mention_added";
+  subject_id_hash: string;
+  memory_id: string;
+  kind: string; // "primary_subject" | "source_author" | "tag" | "body_match"
+  field_path?: string;
+}
+
+/** A subject mention removed (cascade or manual cleanup). */
+export interface AuditSubjectMentionRemovedOp {
+  op: "subject_mention_removed";
+  subject_id_hash: string;
+  memory_id: string;
+}
+
+/** Per-memory cascade event during an erase-subject run. */
+export interface AuditSubjectErasedOp {
+  op: "subject_erased";
+  subject_id_hash: string;
+  memory_id: string;
+  action: "full_delete" | "scrub";
+  reason_hash: string;
+}
+
+/** Final per-cascade summary. */
+export interface AuditSubjectErasedCompleteOp {
+  op: "subject_erased_complete";
+  subject_id_hash: string;
+  count: number;
+  manual_review_required?: number;
+  skipped_missing_file?: number;
+  duration_ms: number;
+  verify_status: string; // "ok" | "needs_manual_review" | "noop"
+}
+
+/** Cascade encountered a body-only mention; human review required (spec §3.4). */
+export interface AuditManualRedactionRequiredOp {
+  op: "manual_redaction_required";
+  subject_id_hash: string;
+  memory_id: string;
+  field_path: string; // "body" | "tags_or_sources" | …
+  note?: string;
+}
+
 export type AuditEntry =
   | AuditWriteOp | AuditReadOp | AuditSearchOp | AuditPromoteOp
   | AuditContextOp | AuditFailedOp
@@ -179,7 +237,10 @@ export type AuditEntry =
   | AuditContradictScanOp | AuditSummarizeOp | AuditBudgetExceededOp
   | AuditProposalAppliedOp | AuditProposalRejectedOp
   | AuditProposalNoteOp | AuditProposalApplyFailedOp
-  | AuditSupersedeOp;
+  | AuditSupersedeOp
+  | AuditSubjectIndexBuildOp | AuditSubjectMentionAddedOp
+  | AuditSubjectMentionRemovedOp | AuditSubjectErasedOp
+  | AuditSubjectErasedCompleteOp | AuditManualRedactionRequiredOp;
 
 export class Auditor {
   constructor(private readonly logPath: string) {}

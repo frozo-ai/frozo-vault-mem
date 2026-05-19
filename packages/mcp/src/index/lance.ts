@@ -13,7 +13,7 @@ export interface LanceRow {
   title: string;
   project: string | null;
   tags: string[];
-  status: "active" | "archived" | "superseded";
+  status: "active" | "archived" | "superseded" | "erased";
   location: Location;
   path: string;
   updated: string;
@@ -24,7 +24,7 @@ export interface LanceRow {
 export interface LanceFilter {
   type?: MemoryType | MemoryType[];
   project?: string;
-  status?: "active" | "archived" | "superseded";
+  status?: "active" | "archived" | "superseded" | "erased";
   location?: Location | "any";
 }
 
@@ -34,7 +34,7 @@ export interface LanceSearchResult {
   title: string;
   project: string | null;
   tags: string[];
-  status: "active" | "archived" | "superseded";
+  status: "active" | "archived" | "superseded" | "erased";
   location: Location;
   path: string;
   updated: string;
@@ -63,7 +63,14 @@ function buildWhere(filter: LanceFilter): string | null {
     parts.push(`type IN (${types.map((t) => `'${escape(t)}'`).join(", ")})`);
   }
   if (filter.project) parts.push(`project = '${escape(filter.project)}'`);
-  if (filter.status) parts.push(`status = '${escape(filter.status)}'`);
+  if (filter.status) {
+    parts.push(`status = '${escape(filter.status)}'`);
+  } else {
+    // Default: hide DPDP-erased rows from semantic search. Mirrors
+    // the same default in the FTS index — callers can pass
+    // status="erased" explicitly for forensic inspection.
+    parts.push(`status != 'erased'`);
+  }
   if (filter.location && filter.location !== "any") parts.push(`location = '${escape(filter.location)}'`);
   return parts.length > 0 ? parts.join(" AND ") : null;
 }

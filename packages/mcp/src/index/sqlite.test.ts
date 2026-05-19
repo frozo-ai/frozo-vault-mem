@@ -73,4 +73,62 @@ describe("openIndex (in-memory)", () => {
     expect(idx.list({ project: "myapp" }).length).toBe(2);
     expect(idx.list({ type: "decision", project: "myapp" }).length).toBe(1);
   });
+
+  // ---- DPDP erasure: status='erased' is filtered by default ----------------
+
+  it("search hides status='erased' rows by default", () => {
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", body: "supabase active row" }));
+    idx.upsert(sample({
+      id: "mem_2026-04-27_eeeeee",
+      body: "supabase erased stub",
+      status: "erased",
+      location: "archive",
+    }));
+    const r = idx.search({ query: "supabase", limit: 10 });
+    expect(r.results.map((x) => x.id)).toEqual(["mem_2026-04-27_aaaaaa"]);
+  });
+
+  it("search returns status='erased' rows when explicitly asked", () => {
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", body: "supabase active" }));
+    idx.upsert(sample({
+      id: "mem_2026-04-27_eeeeee",
+      body: "supabase erased",
+      status: "erased",
+      location: "archive",
+    }));
+    const r = idx.search({ query: "supabase", status: "erased", limit: 10 });
+    expect(r.results.map((x) => x.id)).toEqual(["mem_2026-04-27_eeeeee"]);
+  });
+
+  it("list also hides status='erased' rows by default", () => {
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa" }));
+    idx.upsert(sample({
+      id: "mem_2026-04-27_eeeeee",
+      status: "erased",
+      location: "archive",
+    }));
+    expect(idx.list({}).map((r) => r.id)).toEqual(["mem_2026-04-27_aaaaaa"]);
+    expect(idx.list({ status: "erased" }).map((r) => r.id)).toEqual([
+      "mem_2026-04-27_eeeeee",
+    ]);
+  });
+
+  it("default-filter doesn't suppress archived or superseded rows", () => {
+    // Only status='erased' is hidden by default; archived + superseded
+    // remain visible (existing behavior — those are reachable memories).
+    const idx = openIndex(":memory:");
+    idx.upsert(sample({ id: "mem_2026-04-27_aaaaaa", body: "x" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_bbbbbb", body: "x", status: "archived", location: "archive" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_cccccc", body: "x", status: "superseded" }));
+    idx.upsert(sample({ id: "mem_2026-04-27_eeeeee", body: "x", status: "erased", location: "archive" }));
+    const r = idx.search({ query: "x", limit: 10 });
+    expect(r.results.map((x) => x.id).sort()).toEqual([
+      "mem_2026-04-27_aaaaaa",
+      "mem_2026-04-27_bbbbbb",
+      "mem_2026-04-27_cccccc",
+    ]);
+  });
 });

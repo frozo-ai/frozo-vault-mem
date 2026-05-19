@@ -14,7 +14,7 @@ export interface IndexRow {
   body: string;
   tags: string[];
   project: string | null;
-  status: "active" | "archived" | "superseded";
+  status: "active" | "archived" | "superseded" | "erased";
   location: Location;
   path: string;
   updated: string;
@@ -24,7 +24,7 @@ export interface SearchInput {
   query: string;
   type?: MemoryType | MemoryType[];
   project?: string;
-  status?: "active" | "archived" | "superseded";
+  status?: "active" | "archived" | "superseded" | "erased";
   location?: Location | "any";
   limit?: number;
 }
@@ -50,7 +50,7 @@ export interface IndexHandle {
   list(filter: {
     type?: MemoryType | MemoryType[];
     project?: string;
-    status?: "active" | "archived" | "superseded";
+    status?: "active" | "archived" | "superseded" | "erased";
     location?: Location | "any";
   }): IndexRow[];
   rebuild(rows: Iterable<IndexRow>): void;
@@ -168,6 +168,13 @@ function makeHandle(db: DB): IndexHandle {
       if (input.status) {
         where.push("status = @status");
         params["status"] = input.status;
+      } else {
+        // Default: exclude DPDP-erased memories from search results. An
+        // erased stub lives in archive/ with status='erased' and a
+        // hashed subject-id forensic trail — but the body is gone and
+        // it should never surface in agent queries. Callers can pass
+        // status="erased" explicitly for inspection.
+        where.push("status != 'erased'");
       }
       if (input.location && input.location !== "any") {
         where.push("location = @location");
@@ -234,7 +241,13 @@ function makeHandle(db: DB): IndexHandle {
         types.forEach((t, i) => { params[`t${i}`] = t; });
       }
       if (filter.project) { where.push("project = @project"); params["project"] = filter.project; }
-      if (filter.status) { where.push("status = @status"); params["status"] = filter.status; }
+      if (filter.status) {
+        where.push("status = @status");
+        params["status"] = filter.status;
+      } else {
+        // Same default as search: hide erased rows unless explicitly asked.
+        where.push("status != 'erased'");
+      }
       if (filter.location && filter.location !== "any") {
         where.push("location = @location");
         params["location"] = filter.location;

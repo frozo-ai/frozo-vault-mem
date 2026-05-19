@@ -106,7 +106,7 @@ const TOOL_DEFS = [
         project: { type: "string" },
         status: {
           type: "string",
-          enum: ["active", "archived", "superseded"],
+          enum: ["active", "archived", "superseded", "erased"],
         },
         location: {
           type: "string",
