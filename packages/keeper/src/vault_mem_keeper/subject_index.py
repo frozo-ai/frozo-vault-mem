@@ -43,9 +43,11 @@ SUBJECT_PREFIXES: tuple[str, ...] = (
 
 # Anchored full-string match: a tag/source must BE a subject id, not
 # merely contain one. Suffix is anything non-empty so we don't accept
-# `email:` with no address.
+# `email:` with no address. Case-insensitive on the prefix label so
+# `Email:Foo@X.com` is recognized; the value is then re-canonicalized.
 _SUBJECT_RE = re.compile(
-    r"^(?:" + "|".join(SUBJECT_PREFIXES) + r"):.+$"
+    r"^(?:" + "|".join(SUBJECT_PREFIXES) + r"):.+$",
+    flags=re.IGNORECASE,
 )
 
 MentionKind = Literal["primary_subject", "source_author", "tag", "body_match"]
@@ -62,15 +64,20 @@ class Mention:
 
 
 def _canonicalize(subject_id: str) -> str:
-    """Lowercase the email local-part/domain so 'Email:Foo@X.com' and
-    'email:foo@x.com' collapse. Other prefixes pass through — Slack IDs,
-    GitHub logins, and Linear/Notion UUIDs all preserve case to match
-    what the source systems return."""
-    if subject_id.startswith("email:"):
-        return "email:" + subject_id[6:].lower()
-    if subject_id.startswith("github:"):
-        return "github:" + subject_id[7:].lower()
-    return subject_id
+    """Normalize prefix to lowercase + lowercase the value for email
+    and github (case-insensitive identifiers in those systems). Slack,
+    Linear, Notion preserve case in the value — they're case-sensitive
+    ids from the source system. So 'Email:Foo@X.com' and
+    'email:foo@x.com' collapse, but 'slack:T0X:U0a' and 'slack:T0X:U0A'
+    stay distinct."""
+    # Split on the FIRST colon — prefix is everything before it.
+    if ":" not in subject_id:
+        return subject_id  # malformed; leave it
+    prefix, _, value = subject_id.partition(":")
+    prefix_lc = prefix.lower()
+    if prefix_lc in ("email", "github"):
+        return f"{prefix_lc}:{value.lower()}"
+    return f"{prefix_lc}:{value}"
 
 
 def _strings_in(value: Any) -> Iterable[str]:

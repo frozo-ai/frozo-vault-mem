@@ -6,10 +6,13 @@ import os
 import sys
 from pathlib import Path
 
+from .audit import Auditor
 from .cli.review import cmd_review
 from .config import load_keeper_config
 from .frontmatter import load_schemas
 from .logging import configure as configure_logging
+from .ops.audit_subject import run_audit_subject, status_to_exit_code
+from .ops.erase_subject import _record_erasure_request, run_erase_subject
 from .ops.reindex_subjects import run_reindex_subjects
 from .paths import resolve_vault_path, vault_paths
 from .runner import RunOpts, run_pass
@@ -139,6 +142,107 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if all_ok else 1
 
 
+def cmd_erase_subject(args: argparse.Namespace) -> int:
+    """Cascade per spec §4 — full_delete or scrub each memory that
+    references the subject, prune the subject from the index, emit
+    audit-log entries. Hard delete (no soft-grace), --reason required."""
+    configure_logging()
+    vault = _resolve_vault(args.vault)
+    paths = vault_paths(vault)
+
+    if not args.dry_run:
+        if not args.reason:
+            sys.stderr.write("ERROR: --reason is required for non-dry-run erasures.\n")
+            return 1
+        # TTY confirm fallback per Q5 (no gatekeeper in OSS keeper yet).
+        if not args.no_confirm:
+            sys.stderr.write(
+                f"\nAbout to erase subject: {args.subject_id}\n"
+                f"Reason: {args.reason}\n"
+                f"Vault: {vault}\n"
+                "This is UNRECOVERABLE. Type the subject id to confirm: "
+            )
+            try:
+                typed = input().strip()
+            except EOFError:
+                sys.stderr.write("\nAborted (no input).\n")
+                return 1
+            if typed != args.subject_id:
+                sys.stderr.write("Subject id did not match. Aborted.\n")
+                return 1
+
+    auditor: Auditor | None = None
+    if not args.dry_run:
+        auditor = Auditor(paths.audit_file)
+        _record_erasure_request(
+            paths,
+            args.subject_id,
+            args.reason,
+            __import__("datetime").datetime.now(__import__("datetime").UTC)
+            .isoformat()
+            .replace("+00:00", "Z"),
+        )
+
+    report = run_erase_subject(
+        paths,
+        args.subject_id,
+        args.reason or "",
+        dry_run=args.dry_run,
+        auditor=auditor,
+    )
+
+    prefix = "[dry-run] " if args.dry_run else ""
+    sys.stdout.write(
+        f"{prefix}erase-subject  subject_hash={report.subject_id_hash[:23]}…  "
+        f"full_delete={report.full_deletes}  scrub={report.scrubs}  "
+        f"manual_review={report.manual_review_required}  "
+        f"missing={report.skipped_missing_file}  "
+        f"index_pruned={report.index_rows_pruned}  "
+        f"duration={report.duration_ms}ms\n"
+    )
+
+    # Spec §6.1 exit-code map for the CLI itself.
+    if report.manual_review_required > 0:
+        return 2  # partial success — structured cascade complete, prose needs review
+    return 0
+
+
+def cmd_audit_subject(args: argparse.Namespace) -> int:
+    """Verify the subject is mechanically gone (spec §5). Maps the
+    result to exit codes 0/1/2/3 per spec §5."""
+    configure_logging()
+    vault = _resolve_vault(args.vault)
+    paths = vault_paths(vault)
+    result = run_audit_subject(paths, args.subject_id)
+
+    sys.stdout.write(
+        f"audit-subject  status={result.status}  "
+        f"scanned={result.md_files_scanned}  "
+        f"structured_leaks={len(result.md_structured_leaks)}  "
+        f"body_mentions={len(result.md_body_mentions)}  "
+        f"index_rows={result.subject_index_rows}  "
+        f"fts={result.fts_status}  lance={result.lance_status}\n"
+    )
+    if args.json:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "subject_id": result.subject_id,
+                    "status": result.status,
+                    "md_structured_leaks": result.md_structured_leaks,
+                    "md_body_mentions": result.md_body_mentions,
+                    "subject_index_rows": result.subject_index_rows,
+                    "fts_status": result.fts_status,
+                    "lance_status": result.lance_status,
+                    "md_files_scanned": result.md_files_scanned,
+                },
+                indent=2,
+            )
+            + "\n"
+        )
+    return status_to_exit_code(result.status)
+
+
 def cmd_reindex_subjects(args: argparse.Namespace) -> int:
     """Backfill `_system/subjects.sqlite` from current frontmatter
     (DPDP Phase 1 — see docs/superpowers/specs/2026-05-19-dpdp-erasure
@@ -200,6 +304,31 @@ def main(argv: list[str] | None = None) -> int:
         help="Count what would be written without touching the db file",
     )
     p_reindex_subj.set_defaults(func=cmd_reindex_subjects)
+
+    p_erase = sub.add_parser(
+        "erase-subject",
+        help="DPDP/GDPR per-subject erasure cascade (spec §4). Hard delete + scrub.",
+    )
+    _vault_arg(p_erase)
+    p_erase.add_argument("subject_id",
+                         help="Canonical subject id (e.g. email:foo@bar.com)")
+    p_erase.add_argument("--reason", default=None,
+                         help="Free-text reason (required for non-dry-run; hashed in audit log)")
+    p_erase.add_argument("--dry-run", action="store_true",
+                         help="Classify + count; don't touch any files or the index")
+    p_erase.add_argument("--no-confirm", action="store_true",
+                         help="Skip TTY confirm prompt (scripts only — unrecoverable)")
+    p_erase.set_defaults(func=cmd_erase_subject)
+
+    p_audit_subj = sub.add_parser(
+        "audit-subject",
+        help="Verify a subject is mechanically erased (spec §5). Exit code maps to status.",
+    )
+    _vault_arg(p_audit_subj)
+    p_audit_subj.add_argument("subject_id")
+    p_audit_subj.add_argument("--json", action="store_true",
+                              help="Print the full result as JSON to stdout")
+    p_audit_subj.set_defaults(func=cmd_audit_subject)
 
     args = parser.parse_args(argv)
     return args.func(args)
