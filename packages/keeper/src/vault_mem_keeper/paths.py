@@ -73,6 +73,8 @@ class VaultPaths:
     @property
     def state_file(self) -> str: return str(Path(self.root, "_system/state.json"))
     @property
+    def subjects_db(self) -> str: return str(Path(self.root, "_system/subjects.sqlite"))
+    @property
     def archive_dir(self) -> str: return str(Path(self.root, "archive"))
     @property
     def projects_dir(self) -> str: return str(Path(self.root, "projects"))

@@ -10,6 +10,7 @@ from .cli.review import cmd_review
 from .config import load_keeper_config
 from .frontmatter import load_schemas
 from .logging import configure as configure_logging
+from .ops.reindex_subjects import run_reindex_subjects
 from .paths import resolve_vault_path, vault_paths
 from .runner import RunOpts, run_pass
 
@@ -138,6 +139,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if all_ok else 1
 
 
+def cmd_reindex_subjects(args: argparse.Namespace) -> int:
+    """Backfill `_system/subjects.sqlite` from current frontmatter
+    (DPDP Phase 1 — see docs/superpowers/specs/2026-05-19-dpdp-erasure
+    -cascade-design.md §3 + §10). Idempotent; safe to re-run."""
+    configure_logging()
+    vault = _resolve_vault(args.vault)
+    paths = vault_paths(vault)
+    report = run_reindex_subjects(paths, dry_run=args.dry_run)
+    prefix = "[dry-run] " if args.dry_run else ""
+    sys.stdout.write(
+        f"{prefix}reindex-subjects  scanned={report.scanned}  "
+        f"unreadable={report.skipped_unreadable}  "
+        f"mentions={report.mentions_written}  "
+        f"subjects={report.distinct_subjects}  "
+        f"db={paths.subjects_db}\n"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="vault-mem-keeper")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -168,6 +188,18 @@ def main(argv: list[str] | None = None) -> int:
     p_review.add_argument("--project", default=None,
                           help="Filter by source memory's project slug")
     p_review.set_defaults(func=cmd_review_cli)
+
+    p_reindex_subj = sub.add_parser(
+        "reindex-subjects",
+        help="Backfill _system/subjects.sqlite from current frontmatter (DPDP Phase 1)",
+    )
+    _vault_arg(p_reindex_subj)
+    p_reindex_subj.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Count what would be written without touching the db file",
+    )
+    p_reindex_subj.set_defaults(func=cmd_reindex_subjects)
 
     args = parser.parse_args(argv)
     return args.func(args)
