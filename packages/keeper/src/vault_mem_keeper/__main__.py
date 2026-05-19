@@ -198,6 +198,8 @@ def cmd_erase_subject(args: argparse.Namespace) -> int:
         f"manual_review={report.manual_review_required}  "
         f"missing={report.skipped_missing_file}  "
         f"index_pruned={report.index_rows_pruned}  "
+        f"fts_dropped={report.fts_rows_dropped}  "
+        f"lance_dropped={report.lance_rows_dropped}  "
         f"duration={report.duration_ms}ms\n"
     )
 
@@ -220,8 +222,10 @@ def cmd_audit_subject(args: argparse.Namespace) -> int:
         f"scanned={result.md_files_scanned}  "
         f"structured_leaks={len(result.md_structured_leaks)}  "
         f"body_mentions={len(result.md_body_mentions)}  "
-        f"index_rows={result.subject_index_rows}  "
-        f"fts={result.fts_status}  lance={result.lance_status}\n"
+        f"subject_index={result.subject_index_rows}  "
+        f"erased={len(result.erased_memory_ids)}  "
+        f"fts={result.fts_status}(drift={result.fts_drift_rows})  "
+        f"lance={result.lance_status}(drift={result.lance_drift_rows})\n"
     )
     if args.json:
         sys.stdout.write(
@@ -232,8 +236,11 @@ def cmd_audit_subject(args: argparse.Namespace) -> int:
                     "md_structured_leaks": result.md_structured_leaks,
                     "md_body_mentions": result.md_body_mentions,
                     "subject_index_rows": result.subject_index_rows,
+                    "erased_memory_ids": result.erased_memory_ids,
                     "fts_status": result.fts_status,
+                    "fts_drift_rows": result.fts_drift_rows,
                     "lance_status": result.lance_status,
+                    "lance_drift_rows": result.lance_drift_rows,
                     "md_files_scanned": result.md_files_scanned,
                 },
                 indent=2,

@@ -34,6 +34,8 @@ from typing import Any
 
 from ..audit import Auditor
 from ..frontmatter import parse_memory_file, serialize_memory
+from ..fts import delete_by_ids as fts_delete_by_ids
+from ..lance import delete_by_ids as lance_delete_by_ids
 from ..paths import MEMORY_TYPES, VaultPaths
 from ..subject_index import (
     SUBJECT_PREFIXES,
@@ -66,6 +68,8 @@ class EraseReport:
     skipped_already_archived: int = 0
     skipped_missing_file: int = 0
     index_rows_pruned: int = 0
+    fts_rows_dropped: int = 0
+    lance_rows_dropped: int = 0
     duration_ms: int = 0
 
 
@@ -367,7 +371,30 @@ def run_erase_subject(
                 }
             )
 
-    # 4) Prune the subject from the subject-mentions index.
+    # 4a) Drop FTS + Lance rows for the full_delete-ed memories. Scrubs
+    #     leave them in place — chokidar will re-index the rewritten
+    #     .md and the row gets updated metadata. Only full_delete needs
+    #     explicit removal so the verifier passes immediately.
+    full_delete_ids = [
+        a.memory_id for a in report.actions if a.action == "full_delete"
+    ]
+    if full_delete_ids:
+        try:
+            report.fts_rows_dropped = fts_delete_by_ids(
+                paths.index_file, full_delete_ids
+            )
+        except Exception:
+            # Don't fail the cascade because index drop failed — the
+            # .md is the source of truth and chokidar will reconcile.
+            report.fts_rows_dropped = 0
+        try:
+            report.lance_rows_dropped = lance_delete_by_ids(
+                paths.lance_dir, full_delete_ids
+            )
+        except Exception:
+            report.lance_rows_dropped = 0
+
+    # 4b) Prune the subject from the subject-mentions index.
     idx = SubjectIndex(paths.subjects_db)
     try:
         report.index_rows_pruned = idx.delete_for_subject(subject_id)

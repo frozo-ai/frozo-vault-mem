@@ -1,9 +1,13 @@
 """Tests for the DPDP/GDPR erasure cascade (Phase 2)."""
 
+import hashlib
+import json
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
 import frontmatter
+import lancedb
 
 from vault_mem_keeper.audit import Auditor
 from vault_mem_keeper.ops.audit_subject import (
@@ -14,6 +18,62 @@ from vault_mem_keeper.ops.erase_subject import run_erase_subject
 from vault_mem_keeper.ops.reindex_subjects import run_reindex_subjects
 from vault_mem_keeper.paths import vault_paths
 from vault_mem_keeper.subject_index import SubjectIndex
+
+EMBED_DIM = 384
+
+
+def _seed_fts_row(index_path: str, memory_id: str) -> None:
+    """Materialize the FTS schema + one row for `memory_id`. Mirrors
+    TS-side `ensureSchema` so the keeper write helper can DELETE
+    against a real virtual table."""
+    Path(index_path).parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(index_path)
+    db.execute("PRAGMA user_version = 1")
+    db.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+          id UNINDEXED, type UNINDEXED, title, body, tags,
+          project UNINDEXED, status UNINDEXED, location UNINDEXED,
+          path UNINDEXED, updated UNINDEXED,
+          tokenize='porter unicode61'
+        )
+    """)
+    db.execute(
+        "INSERT INTO memories_fts"
+        " (id,type,title,body,tags,project,status,location,path,updated)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (
+            memory_id, "decision", "T", "b",
+            json.dumps([]), None, "active", "memory",
+            f"/v/memory/decisions/{memory_id}.md", _now_iso(),
+        ),
+    )
+    db.commit()
+    db.close()
+
+
+def _seed_lance_row(lance_dir: str, memory_id: str) -> None:
+    """Materialize a Lance table with one row for `memory_id`."""
+    Path(lance_dir).parent.mkdir(parents=True, exist_ok=True)
+    db = lancedb.connect(lance_dir)
+    row = {
+        "id": memory_id,
+        "vector": [0.05] * EMBED_DIM,
+        "type": "decision",
+        "title": "T",
+        "project": "p",
+        "tags": [],
+        "status": "active",
+        "location": "memory",
+        "path": f"/v/memory/decisions/{memory_id}.md",
+        "updated": _now_iso(),
+        "schema_version": "0.1",
+        "embed_model": "test",
+    }
+    db.create_table("memories", [row])
+
+
+def _hash(s: str) -> str:
+    return "sha256:" + hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def _now_iso() -> str:
@@ -348,3 +408,155 @@ def test_erasure_requests_jsonl_records_plaintext(tmp_vault: Path) -> None:
     last = _json.loads(log.read_text().strip().splitlines()[-1])
     assert last["subject_id"] == "email:a@b.com"
     assert last["reason"] == "DPDP SAR ticket #42"
+
+
+# ---------- FTS + Lance integration ------------------------------------
+
+
+def test_full_delete_drops_fts_row(tmp_vault: Path) -> None:
+    paths = vault_paths(str(tmp_vault))
+    _write_memory(
+        tmp_vault, "mem_a", "memory",
+        type_="entity", entity_kind="person", tags=["email:fts@x.com"],
+    )
+    # Pre-seed FTS row for mem_a
+    _seed_fts_row(paths.index_file, "mem_a")
+
+    run_reindex_subjects(paths)
+    report = run_erase_subject(paths, "email:fts@x.com", reason="r")
+
+    assert report.full_deletes == 1
+    assert report.fts_rows_dropped == 1
+    # FTS row should be gone
+    db = sqlite3.connect(f"file:{paths.index_file}?mode=ro", uri=True)
+    try:
+        n = db.execute(
+            "SELECT COUNT(*) FROM memories_fts WHERE id = ?", ("mem_a",)
+        ).fetchone()[0]
+        assert n == 0
+    finally:
+        db.close()
+
+
+def test_full_delete_drops_lance_row(tmp_vault: Path) -> None:
+    paths = vault_paths(str(tmp_vault))
+    _write_memory(
+        tmp_vault, "mem_a", "memory",
+        type_="entity", entity_kind="person", tags=["email:lance@x.com"],
+    )
+    # Pre-seed Lance row for mem_a
+    _seed_lance_row(paths.lance_dir, "mem_a")
+
+    run_reindex_subjects(paths)
+    report = run_erase_subject(paths, "email:lance@x.com", reason="r")
+
+    assert report.full_deletes == 1
+    assert report.lance_rows_dropped == 1
+    # Lance row should be gone
+    db = lancedb.connect(paths.lance_dir)
+    table = db.open_table("memories")
+    rows = table.search().where("id = 'mem_a'").limit(2).to_list()
+    assert rows == []
+
+
+def test_scrub_leaves_fts_and_lance_alone(tmp_vault: Path) -> None:
+    """Spec invariant: scrub rewrites the .md in place; chokidar
+    handles re-indexing. The cascade itself MUST NOT drop FTS/Lance
+    rows for scrubbed memories (they're still active)."""
+    paths = vault_paths(str(tmp_vault))
+    _write_memory(tmp_vault, "mem_a", "memory", tags=["email:scrub@x.com", "vault-mem"])
+    _seed_fts_row(paths.index_file, "mem_a")
+    _seed_lance_row(paths.lance_dir, "mem_a")
+
+    run_reindex_subjects(paths)
+    report = run_erase_subject(paths, "email:scrub@x.com", reason="r")
+
+    assert report.scrubs == 1
+    assert report.fts_rows_dropped == 0
+    assert report.lance_rows_dropped == 0
+    # Rows still present
+    db = sqlite3.connect(f"file:{paths.index_file}?mode=ro", uri=True)
+    try:
+        n = db.execute(
+            "SELECT COUNT(*) FROM memories_fts WHERE id = ?", ("mem_a",)
+        ).fetchone()[0]
+        assert n == 1
+    finally:
+        db.close()
+
+
+def test_audit_subject_reports_checked_after_erase(tmp_vault: Path) -> None:
+    """Once the cascade has produced an archive/erased/ stub, the
+    verifier knows which memory_ids to check FTS+Lance for, so the
+    status moves from 'unknown' to 'checked'."""
+    paths = vault_paths(str(tmp_vault))
+    _write_memory(
+        tmp_vault, "mem_a", "memory",
+        type_="entity", entity_kind="person", tags=["email:checked@x.com"],
+    )
+    _seed_fts_row(paths.index_file, "mem_a")
+    _seed_lance_row(paths.lance_dir, "mem_a")
+    run_reindex_subjects(paths)
+    run_erase_subject(paths, "email:checked@x.com", reason="r")
+
+    result = run_audit_subject(paths, "email:checked@x.com")
+    assert result.status == "clean"
+    assert result.fts_status == "checked"
+    assert result.lance_status == "checked"
+    assert result.fts_drift_rows == 0
+    assert result.lance_drift_rows == 0
+    assert result.erased_memory_ids == ["mem_a"]
+
+
+def test_audit_subject_detects_index_drift(tmp_vault: Path) -> None:
+    """Simulate cascade-half-done: archive/erased/ stub exists but FTS
+    still has the row. Verifier reports `index_drift` exit code 3."""
+    paths = vault_paths(str(tmp_vault))
+    # Manually plant an erased stub (no original active memory; simulates
+    # a cascade where the .md move + index pruning succeeded but the
+    # FTS delete failed).
+    erased_dir = Path(paths.root, "archive", "erased")
+    erased_dir.mkdir(parents=True, exist_ok=True)
+    target_hash = _hash("email:drift@x.com")
+    stub_fm = {
+        "id": "mem_a", "type": "archived", "title": "(erased)",
+        "agent": "human", "session": None,
+        "created": _now_iso(), "updated": _now_iso(),
+        "confidence": 0.0, "sources": [], "contradicts": [],
+        "supersedes": [], "tags": [], "project": None,
+        "ttl_days": None, "status": "erased",
+        "human_reviewed": True, "human_approved": False,
+        "schema_version": "0.1",
+        "erased_at": _now_iso(),
+        "erasure_reason_hash": _hash("r"),
+        "erasure_subject_hash": target_hash,
+        "original_type": "entity",
+        "original_project": None,
+    }
+    (erased_dir / "mem_a.md").write_text(
+        frontmatter.dumps(frontmatter.Post("(redacted)", **stub_fm))
+    )
+    # FTS still has the stale row
+    _seed_fts_row(paths.index_file, "mem_a")
+
+    result = run_audit_subject(paths, "email:drift@x.com")
+    assert result.status == "index_drift"
+    assert result.fts_drift_rows == 1
+    assert result.erased_memory_ids == ["mem_a"]
+    assert status_to_exit_code(result.status) == 3
+
+
+def test_audit_subject_no_stubs_no_drift_check(tmp_vault: Path) -> None:
+    """Subject was never erased (no stubs). Verifier returns clean
+    with fts_status='checked' (vacuously — no ids to check)."""
+    paths = vault_paths(str(tmp_vault))
+    result = run_audit_subject(paths, "email:never@x.com")
+    assert result.status == "clean"
+    assert result.fts_status == "checked"
+    assert result.lance_status == "checked"
+    assert result.erased_memory_ids == []
+
+
+def _now_iso_for_helper() -> str:
+    # Local shim because fixtures don't share helpers across files.
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")

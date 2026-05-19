@@ -1,9 +1,13 @@
-"""Read-only LanceDB queries.
+"""LanceDB queries.
 
-The keeper does not write to Lance; the MCP server's watcher reconciles
-the index after keeper-induced file changes."""
+Read-only by default (LanceReader). `delete_by_ids()` is a module-
+level escape hatch for the DPDP erasure cascade (spec §4) which needs
+to drop embedding rows atomically with the .md cascade so the verifier
+passes immediately. The MCP server's chokidar watcher would eventually
+do the same on its own; the cascade beats it to the punch."""
 
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
 import lancedb
@@ -77,3 +81,47 @@ class LanceReader:
     def close(self) -> None:
         # LanceDB has no explicit close; GC handles it. No-op for symmetry.
         pass
+
+
+# ---------------------------------------------------------------------------
+# Write helpers (DPDP erasure cascade only).
+# ---------------------------------------------------------------------------
+
+
+def delete_by_ids(dir_path: str, ids: list[str]) -> int:
+    """Drop embedding rows for `ids` from the Lance table. Returns
+    rows removed (best-effort — Lance doesn't always report a count).
+
+    No-op if the Lance directory or table doesn't exist (fresh vault
+    that has never indexed any embeddings).
+    """
+    if not ids:
+        return 0
+    if not Path(dir_path).exists():
+        return 0
+    db = lancedb.connect(dir_path)
+    if TABLE_NAME not in db.table_names():
+        return 0
+    table = db.open_table(TABLE_NAME)
+    before = table.count_rows()
+    # Build "id IN ('a', 'b', ...)" defensively-escaped.
+    quoted = ", ".join(f"'{_escape(i)}'" for i in ids)
+    table.delete(f"id IN ({quoted})")
+    after = table.count_rows()
+    return max(0, before - after)
+
+
+def count_for_ids(dir_path: str, ids: list[str]) -> int:
+    """How many rows in the Lance table match `ids`. Used by the
+    audit-subject verifier."""
+    if not ids:
+        return 0
+    if not Path(dir_path).exists():
+        return 0
+    db = lancedb.connect(dir_path)
+    if TABLE_NAME not in db.table_names():
+        return 0
+    table = db.open_table(TABLE_NAME)
+    quoted = ", ".join(f"'{_escape(i)}'" for i in ids)
+    rows = table.search().where(f"id IN ({quoted})").limit(len(ids) + 1).to_list()
+    return len(rows)

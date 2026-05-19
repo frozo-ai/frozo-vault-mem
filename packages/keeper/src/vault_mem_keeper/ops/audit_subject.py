@@ -12,16 +12,22 @@ Returns a structured report. The CLI maps the report to an exit code:
 - 3 → index inconsistency (FTS or LanceDB still has rows for memories
   that should be archived; re-run `vault-mem-mcp reindex` to fix)
 
-In v0.1 the FTS + LanceDB check is deferred — the verifier reports
-"unknown" for those rather than scanning. Will be wired in the
-follow-up commit that adds direct write paths from the keeper.
+FTS + LanceDB drift is checked by cross-referencing `archive/erased/`
+stubs (which carry the SHA-256 hash of the subject id in frontmatter)
+against the live index rows. Any FTS or Lance row whose `id` matches
+a stub's `id` means the cascade fired but the index wasn't reconciled
+— exit code 3, operator runs `vault-mem-mcp reindex` or the cascade
+re-fires.
 """
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
 from ..frontmatter import parse_memory_file
+from ..fts import count_for_ids as fts_count_for_ids
+from ..lance import count_for_ids as lance_count_for_ids
 from ..paths import MEMORY_TYPES, VaultPaths
 from ..subject_index import (
     SubjectIndex,
@@ -38,6 +44,9 @@ class VerifyResult:
     md_structured_leaks: list[dict[str, Any]] = field(default_factory=list)
     md_body_mentions: list[dict[str, Any]] = field(default_factory=list)
     subject_index_rows: int = 0
+    erased_memory_ids: list[str] = field(default_factory=list)
+    fts_drift_rows: int = 0
+    lance_drift_rows: int = 0
     fts_status: Literal["unknown", "checked"] = "unknown"
     lance_status: Literal["unknown", "checked"] = "unknown"
     md_files_scanned: int = 0
@@ -108,13 +117,52 @@ def run_audit_subject(
         finally:
             idx.close()
 
-    # 3) FTS + LanceDB deferred to follow-up (see module docstring).
-    #    Caller can treat "unknown" + structured-clean as good-enough
-    #    for v0.1, or run `vault-mem-mcp reindex` then re-audit.
+    # 3) FTS + LanceDB drift check. The cascade leaves erased stubs in
+    #    archive/erased/ keyed on memory_id; each carries
+    #    `erasure_subject_hash`. Match by hash → check FTS+Lance for
+    #    stale rows referencing those memory_ids.
+    target_hash = "sha256:" + hashlib.sha256(subject_id.encode("utf-8")).hexdigest()
+    erased_dir = Path(paths.root, "archive", "erased")
+    if erased_dir.is_dir():
+        for f in sorted(erased_dir.glob("*.md")):
+            try:
+                fm, _ = parse_memory_file(str(f))
+            except Exception:
+                continue
+            if fm.get("erasure_subject_hash") == target_hash:
+                result.erased_memory_ids.append(f.stem)
 
-    # Status precedence: structured_leak > index_drift > needs_human_review > clean.
+    if result.erased_memory_ids:
+        try:
+            result.fts_drift_rows = fts_count_for_ids(
+                paths.index_file, result.erased_memory_ids
+            )
+            result.fts_status = "checked"
+        except Exception:
+            result.fts_status = "unknown"
+        try:
+            result.lance_drift_rows = lance_count_for_ids(
+                paths.lance_dir, result.erased_memory_ids
+            )
+            result.lance_status = "checked"
+        except Exception:
+            result.lance_status = "unknown"
+    else:
+        # No stubs for this subject — either it was never erased, or
+        # the operator hasn't run erase-subject. Either way, no drift
+        # to check; both indexes are vacuously "clean for this subject."
+        result.fts_status = "checked"
+        result.lance_status = "checked"
+
+    # Status precedence per spec §5:
+    #   structured_leak (1) > index_drift (3) > needs_human_review (2) > clean (0).
+    # structured_leak is most severe (cascade bug — data still in active
+    # set). index_drift is "operator needs to reindex." human_review is
+    # a deliberate hand-off, not a bug.
     if result.md_structured_leaks or result.subject_index_rows > 0:
         result.status = "structured_leak"
+    elif result.fts_drift_rows > 0 or result.lance_drift_rows > 0:
+        result.status = "index_drift"
     elif result.md_body_mentions:
         result.status = "needs_human_review"
     else:
