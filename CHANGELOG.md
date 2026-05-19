@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — DPDP / GDPR per-subject erasure cascade
+
+Complete pipeline for fulfilling right-to-erasure requests against the
+vault. Design landed first (`docs/superpowers/specs/2026-05-19-dpdp-
+erasure-cascade-design.md`), then five implementation commits across
+the OSS keeper + MCP server. Cloud parity (in the separate `vault-cloud`
+repo) is a follow-up.
+
+**Subject-mention index (Phase 1):**
+- New SQLite store at `_system/subjects.sqlite` mapping `subject_id →
+  memory_id[]` so the cascade can look up affected memories in O(1)
+  rather than scanning the vault on every request.
+- New keeper module `subject_index.py` + extractor that recognizes
+  canonical subject ids (`email:`, `slack:`, `github:`, `linear:`,
+  `notion:`, `local:`) in `tags` + `sources` frontmatter fields.
+  Case-insensitive on the prefix label; email and github values
+  canonicalized to lowercase.
+- `vault-mem-keeper reindex-subjects [--dry-run]` CLI subcommand for
+  one-shot backfill of legacy vaults that predate this work.
+
+**Cascade + verifier (Phase 2):**
+- `vault-mem-keeper erase-subject <subject-id> --reason "..."
+  [--dry-run] [--no-confirm]` — hard-delete cascade per spec §4. Routes
+  per-memory by mention kind: `primary_subject` → full delete (move .md
+  to `archive/erased/<id>.md` with a redacted stub carrying only
+  hashed forensic metadata); `tag` / `source_author` → scrub (filter
+  subject from `tags` + `sources` arrays, rewrite in place);
+  `body_match` → manual review required.
+- Direct FTS + LanceDB row deletion for full-deleted memories
+  (`fts.delete_by_ids`, `lance.delete_by_ids` — module-level escape
+  hatches from the previously read-only invariants, documented
+  accordingly).
+- Per-cascade audit emission: `subject_erased` per memory +
+  `subject_erased_complete` summary, all using SHA-256 hashes of
+  `subject_id` and `reason`. Plaintext lives in controller-private
+  `_system/erasure_requests.jsonl` only.
+- `vault-mem-keeper audit-subject <subject-id> [--json]` — verifier
+  per spec §5. Exit codes: `0` clean / `1` structured_leak (cascade
+  bug) / `2` needs_human_review (prose mentions) / `3` index_drift
+  (FTS/Lance row still references an archived memory; run
+  `vault-mem-mcp reindex`).
+
+**Read-path filter (Phase 2 TS):**
+- `memory_search` and the underlying FTS + Lance handles now hide
+  `status: 'erased'` memories by default. Pass `status: 'erased'`
+  explicitly for forensic inspection. Archived and superseded memories
+  remain visible (existing behaviour).
+- AuditEntry union widened with six new op types
+  (`subject_index_build`, `subject_mention_added`,
+  `subject_mention_removed`, `subject_erase_requested`,
+  `subject_erased`, `subject_erased_complete`,
+  `manual_redaction_required`) so `tail-audit` renders them cleanly.
+
+**Agent-callable approval flow (Phase 3):**
+- **New MCP tool `memory_erase_subject(subject_id, reason)`**.
+  Validates input, writes a `subject_erase_request` proposal to
+  `_system/proposals.jsonl`, returns `{status: "pending_approval",
+  proposal_id, subject_id_hash, instructions}`. **Never executes the
+  cascade directly** — that's the design.
+- `vault-mem-keeper review` extended to dispatch by proposal kind:
+  contradict proposals route to the existing supersede flow;
+  `subject_erase_request` proposals show a distinct UI (subject,
+  reason, requester, ⚠ UNRECOVERABLE warnings) and call
+  `run_erase_subject` on accept. `--filter subject_erase_request`
+  isolates erasure approvals from contradict noise.
+
+**Operator runbook + privacy README section:**
+- `docs/runbooks/erasure-git-history.md` covers the manual
+  `git filter-repo` flow for vaults backed up via `git push` (the
+  cascade refuses to rewrite git history automatically; see spec §8).
+- README "Privacy & DPDP / GDPR compliance" section explains the
+  privacy posture: no telemetry, no cloud dependency, hashed audit log,
+  end-to-end erasure pipeline, links to the public design spec.
+
+**Test coverage:** 52 new pytest/vitest cases across the five commits.
+Full suites: 161 MCP TS + 160 Python keeper, ruff + tsc clean.
+
 ### Added — Supersede flow (PRD week 11)
 
 - **New MCP tool `memory_supersede`**: marks `loser_id` as superseded by

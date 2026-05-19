@@ -123,21 +123,42 @@ diff-friendly, CI-friendly.
 
 Each has typed frontmatter (validated against JSON Schema), markdown body, and decay policy (configurable in `_system/config.yaml`). Reference: [docs/CONFIG.md](docs/CONFIG.md).
 
+## Privacy & DPDP / GDPR compliance
+
+Vault-mem treats privacy as a design constraint, not a feature toggle.
+
+**No telemetry.** Zero phone-home. Opt-in only — and there's no opt-in flag in v0.1 because there's no upstream collector to opt into. The keeper, MCP server, and exporter never make outbound network calls except to the LLM provider you've explicitly configured (Anthropic or OpenRouter, with your key).
+
+**No cloud dependency.** Self-host runs end-to-end on your machine. Embeddings are local (`all-MiniLM-L6-v2` ONNX, runs on CPU). FTS is SQLite. Vector store is LanceDB. The only network egress is to the LLM provider, and only for the Phase 5 keeper ops you can disable in `_system/config.yaml`.
+
+**Hashed audit log.** Every `memory_write`, `memory_search`, and `memory_context` is recorded in `_system/audit.log` (JSONL). Query text is **sha256-hashed before write** — raw queries never persist. Subject identifiers in erasure-cascade audit entries are likewise hashed; plaintext lives only in the gitignored `_system/erasure_requests.jsonl` under your retention policy.
+
+**Per-subject erasure cascade (DPDP / GDPR Article 17).** Vault-mem ships a complete subject-erasure pipeline:
+
+- `vault-mem-keeper erase-subject <subject-id> --reason "..."` — cascades through `.md` files (full-delete to `archive/erased/<id>.md` with a redacted stub, or scrub of the subject from `tags` + `sources` arrays), prunes the `_system/subjects.sqlite` index, drops FTS + LanceDB rows for full-deleted memories, and emits hashed audit entries.
+- `vault-mem-keeper audit-subject <subject-id>` — verifies the cascade was complete. Exit codes per spec §5: `0` clean / `1` structured leak / `2` prose mention needs human review / `3` index drift (run `vault-mem-mcp reindex`).
+- `memory_erase_subject` MCP tool — agent-callable, but **never silently runs the cascade**. Writes a `subject_erase_request` proposal to the approval queue and returns `pending_approval`. Operator runs `vault-mem-keeper review --filter subject_erase_request` to approve before the cascade fires. The full design lives at [`docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md`](docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md).
+
+**Git history is the operator's call.** If you `git push` your vault to a backup remote, erasing memories from current state doesn't erase them from past commits. The cascade refuses to rewrite history automatically because force-pushing rewrites breaks every existing clone. The runbook for when and how to do it manually lives at [`docs/runbooks/erasure-git-history.md`](docs/runbooks/erasure-git-history.md).
+
+We chose to **publish the erasure design publicly** rather than treat it as a vendor moat. Privacy by design is a marketing asset — and an obligation, since you're trusting vault-mem with your team's tribal knowledge.
+
 ## Status
 
-**Active development.** 122 TypeScript tests + 114 Python tests, all passing.
+**Active development.** 161 TypeScript tests + 160 Python tests, all passing.
 macOS-tested. Linux should work for the MCP server and the keeper script
 (the launchd plist is macOS-only — Linux/systemd unit files welcome as PRs).
 Windows untested.
 
-Phases 0–5 shipped: vault scaffolding, MCP server v0.1, hybrid FTS + semantic
-search, hygiene daemon (triage / link / decay / archive), Telegram approval
-gate, Sonnet contradiction engine + per-project summarization, and the
-skills-file exporter.
+Shipped: vault scaffolding, MCP server v0.1, hybrid FTS + semantic search,
+hygiene daemon (triage / link / decay / archive), Sonnet contradiction engine
++ per-project summarization, skills-file exporter, supersede flow, eval
+harness, DPDP/GDPR per-subject erasure cascade.
 
 **What's next:** Phase 6 polish (Obsidian Dataview dashboards + optional
-Obsidian plugin), broader connector ingestion, eval harness. The current
-roadmap lives in [`vault-mem-PRD.md`](./vault-mem-PRD.md); the original
+Obsidian plugin), Telegram approval-gate transport (proposals queue exists
+today; Telegram would plug in as an alternate delivery channel), broader
+connector ingestion. The current roadmap lives in [`vault-mem-PRD.md`](./vault-mem-PRD.md); the original
 solo-build PRD is preserved in [docs/origin/](docs/origin/) for context.
 
 ## Contributing

@@ -8,6 +8,7 @@ edit and confirm before posting to each venue.
 | [`show-hn.md`](./show-hn.md) | Show HN | Dry, technical, acknowledge trade-offs |
 | [`reddit-localllama.md`](./reddit-localllama.md) | r/LocalLLaMA | Practical, local-first framing |
 | [`twitter-thread.md`](./twitter-thread.md) | Twitter / X | 8-tweet thread, visual + emotional |
+| [`privacy-by-design.md`](./privacy-by-design.md) | Blog + r/privacy | Long-form essay on the DPDP erasure cascade design and why we published it |
 
 ## Pre-launch checklist
 
