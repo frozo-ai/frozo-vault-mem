@@ -42,16 +42,22 @@ each field.
 
 ## Authoring a gold set
 
-1. Pick 5–20 questions a teammate would actually ask Claude about this
+1. Pick questions a teammate would actually ask Claude about this
    project ("what did we decide about auth?", "what tooling are we using
    for embeddings?").
 2. For each, list the memory ids in your vault that contain the right
    answer. Get them from `memory_search` or by browsing `~/vault-mem/`.
 3. Save the file as `evals/<project>/<set-name>.json` following the schema.
 
-Keep gold sets **small** (5–20 questions) and **focused** (one set per
-purpose: smoke, release-gate, particular feature). Big sets are hard to
-maintain; small focused sets give actionable feedback.
+## Recommended sizes
+
+| Purpose | Size | Notes |
+|---|---|---|
+| `smoke.json` | 5–10 questions | Fast CI gate. Run on every change. |
+| `dogfood.json` | ~50 questions | Your own usage as proxy for real users. Catches retrieval regressions. |
+| `<partner>.json` (design partner / production project) | **≥ 50 questions** | Required threshold per PRD §12 Risk #10. Adversarial questions added monthly. |
+
+Smaller sets give actionable feedback fast; larger sets are needed before a project can claim "we tested retrieval against real usage." Both have their place — don't ship a `smoke` as if it were a partner gold set.
 
 ## Scoring
 
