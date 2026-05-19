@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" class="bg-slate-950 text-slate-100">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vault-mem — local-first shared memory for AI agents</title>
+    <meta name="description" content="A local-first markdown memory layer for Claude Code, Cursor, and any MCP-aware agent. Your knowledge as plain .md files, with a background daemon that keeps them coherent. MIT-licensed, zero cloud dependency." />
+    <meta property="og:title" content="vault-mem — local-first shared memory for AI agents" />
+    <meta property="og:description" content="One markdown vault, multiple agents, zero cloud dependency. MCP-native. MIT-licensed." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://frozo-ai.github.io/frozo-vault-mem/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📓%3C/text%3E%3C/svg%3E" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+      .grain { background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 4px 4px; }
+    </style>
+  </head>
+  <body class="grain min-h-screen antialiased">
+    <header class="border-b border-slate-800/60">
+      <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📓</span>
+          <span class="font-mono text-sm tracking-tight">vault-mem</span>
+          <span class="ml-2 hidden rounded border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400 sm:inline">MIT · v0.x</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+          <a href="#install" class="hover:text-white text-slate-400">Install</a>
+          <a href="#architecture" class="hover:text-white text-slate-400">Architecture</a>
+          <a href="https://github.com/frozo-ai/frozo-vault-mem" class="rounded bg-white px-3 py-1.5 text-slate-900 hover:bg-slate-200">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-6">
+      <!-- Hero -->
+      <section class="py-20 sm:py-28">
+        <h1 class="max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
+          Local-first <span class="text-emerald-400">shared memory</span> for your AI agents.
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg text-slate-300">
+          One Obsidian-friendly markdown vault. Multiple agents. Zero cloud dependency.
+          Claude Code, Cursor, and any MCP-aware client read from and write to the same place — and a 30-min daemon quietly keeps it coherent.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="#install" class="rounded bg-emerald-500 px-4 py-2 font-medium text-slate-950 hover:bg-emerald-400">Get started →</a>
+          <a href="https://github.com/frozo-ai/frozo-vault-mem" class="rounded border border-slate-700 px-4 py-2 text-slate-200 hover:border-slate-500">Star on GitHub</a>
+          <code class="rounded bg-slate-900/60 px-3 py-2 font-mono text-sm text-slate-300">git clone github.com/frozo-ai/frozo-vault-mem</code>
+        </div>
+      </section>
+
+      <!-- Why -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">The problem</h2>
+        <p class="mt-3 max-w-3xl text-2xl font-medium tracking-tight">
+          You work across multiple AI agents — each forgets what the others did.
+        </p>
+        <p class="mt-4 max-w-2xl text-slate-400">
+          Today your "memory" is conversation histories you can't search, project context copy-pasted into every new session, and Notion docs you forgot to update. vault-mem fixes this with <em class="text-slate-200 not-italic">one shared markdown vault</em> all your agents read from and write to.
+        </p>
+      </section>
+
+      <!-- Value props -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">What you get</h2>
+        <div class="mt-8 grid gap-6 sm:grid-cols-2">
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-6">
+            <div class="text-emerald-400">①</div>
+            <h3 class="mt-2 text-lg font-medium">5 MCP tools, any agent</h3>
+            <p class="mt-2 text-sm text-slate-400"><code class="font-mono text-xs">memory_write</code>, <code class="font-mono text-xs">memory_read</code>, <code class="font-mono text-xs">memory_search</code>, <code class="font-mono text-xs">memory_promote</code>, <code class="font-mono text-xs">memory_context</code>. Works with Claude Code, Claude Desktop, Cursor, Windsurf, or any MCP-aware client.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-6">
+            <div class="text-emerald-400">②</div>
+            <h3 class="mt-2 text-lg font-medium">Hybrid search, zero API keys</h3>
+            <p class="mt-2 text-sm text-slate-400">SQLite FTS5 BM25 + local ONNX MiniLM embeddings, fused via Reciprocal Rank Fusion. Runs entirely on your machine. No OpenAI bill.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-6">
+            <div class="text-emerald-400">③</div>
+            <h3 class="mt-2 text-lg font-medium">A second brain you fully own</h3>
+            <p class="mt-2 text-sm text-slate-400">Every memory is a <code class="font-mono text-xs">.md</code> file at <code class="font-mono text-xs">~/vault-mem/</code>. Open it in Obsidian. Commit it to git. If every AI vendor disappeared tomorrow, your knowledge survives.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-6">
+            <div class="text-emerald-400">④</div>
+            <h3 class="mt-2 text-lg font-medium">Coherence without effort</h3>
+            <p class="mt-2 text-sm text-slate-400">A Python daemon runs every 30 min — promotes inbox writes, decays stale observations, links semantic neighbors, surfaces contradictions for review. You write; it tends the garden.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Install -->
+      <section id="install" class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">Install</h2>
+        <p class="mt-3 max-w-2xl text-slate-400">macOS / Linux. Node ≥ 20, Python ≥ 3.12, <a href="https://pnpm.io" class="text-emerald-400 underline-offset-2 hover:underline">pnpm</a>, and <a href="https://docs.astral.sh/uv/" class="text-emerald-400 underline-offset-2 hover:underline">uv</a>.</p>
+
+        <div class="mt-6 overflow-hidden rounded-lg border border-slate-800/60 bg-slate-950">
+          <div class="border-b border-slate-800/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-slate-500">1 — clone + build</div>
+<pre class="px-4 py-4 text-sm text-slate-200"><code>git clone https://github.com/frozo-ai/frozo-vault-mem.git
+cd frozo-vault-mem
+pnpm install
+pnpm --filter @vault-mem/mcp build</code></pre>
+        </div>
+
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-800/60 bg-slate-950">
+          <div class="border-b border-slate-800/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-slate-500">2 — materialize a vault</div>
+<pre class="px-4 py-4 text-sm text-slate-200"><code>node packages/mcp/bin/vault-mem-mcp init     # creates ~/vault-mem/
+node packages/mcp/bin/vault-mem-mcp doctor   # expect 9/9 PASS</code></pre>
+        </div>
+
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-800/60 bg-slate-950">
+          <div class="border-b border-slate-800/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-slate-500">3 — register with Claude Code</div>
+<pre class="px-4 py-4 text-sm text-slate-200"><code>claude mcp add --scope user vault-mem \
+  -e VAULT_MEM_PATH=$HOME/vault-mem \
+  -- node $(pwd)/packages/mcp/bin/vault-mem-mcp</code></pre>
+        </div>
+
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-800/60 bg-slate-950">
+          <div class="border-b border-slate-800/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-slate-500">4 — schedule the keeper (optional, macOS launchd)</div>
+<pre class="px-4 py-4 text-sm text-slate-200"><code>cp ops/keeper/com.vaultmem.keeper.plist ~/Library/LaunchAgents/
+# edit REPLACE_USER + paths
+launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist</code></pre>
+        </div>
+
+        <p class="mt-4 text-sm text-slate-500">Full setup including Cursor / Windsurf / generic MCP clients: see <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/docs/INSTALL.md" class="text-emerald-400 underline-offset-2 hover:underline">docs/INSTALL.md</a>.</p>
+      </section>
+
+      <!-- Architecture -->
+      <section id="architecture" class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">Architecture</h2>
+        <p class="mt-3 max-w-2xl text-slate-400">Four small processes, each in the language that fits its job. Compose them independently — or just run the MCP server alone.</p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-lg border border-slate-800/60 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">mcp server</div>
+            <p class="mt-2 text-sm text-slate-300">TypeScript + official MCP SDK. Exposes <code class="font-mono text-xs">memory_*</code> tools over stdio. Localhost-only by default.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">keeper</div>
+            <p class="mt-2 text-sm text-slate-300">Python + <code class="font-mono text-xs">uv</code>. Every 30 min: triage, dedupe, link, decay, contradict, summarize. Haiku for cheap reasoning, Sonnet for judgment.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">gatekeeper</div>
+            <p class="mt-2 text-sm text-slate-300">Telegram approval gate for destructive ops (merge, supersede, archive recently-touched, resolve contradictions). Bring your own bot.</p>
+          </div>
+          <div class="rounded-lg border border-slate-800/60 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">index</div>
+            <p class="mt-2 text-sm text-slate-300">LanceDB + local <code class="font-mono text-xs">all-MiniLM-L6-v2</code> for self-host. Re-indexes on file change. Rebuildable any time — <code class="font-mono text-xs">.md</code> is the source of truth.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick win -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">Skills-file export</h2>
+        <p class="mt-3 max-w-3xl text-xl font-medium">
+          Turn your team's accumulated decisions into a skill bundle any agent can drop in.
+        </p>
+        <div class="mt-6 overflow-hidden rounded-lg border border-slate-800/60 bg-slate-950">
+          <div class="border-b border-slate-800/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-slate-500">vault-mem-mcp export-skill</div>
+<pre class="px-4 py-4 text-sm text-slate-200"><code>node packages/mcp/bin/vault-mem-mcp export-skill my-project \
+  --target claude --out ./out/
+
+# Targets supported: claude | cursor | windsurf | generic</code></pre>
+        </div>
+        <p class="mt-4 text-sm text-slate-500">The exporter bundles the memories tagged for a project into the skill format consumed by your agent of choice. Drop the output directory in and your agent picks up your team's decisions at boot.</p>
+      </section>
+
+      <!-- Privacy / trust -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">Privacy by default</h2>
+        <ul class="mt-6 space-y-3 text-slate-300">
+          <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">No telemetry.</strong> Zero phone-home, opt-in only. The README spells out the opt-in flag on day 1.</span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">No cloud dependency.</strong> Self-host runs entirely on your machine. Embeddings are local. No API keys required for core search.</span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">DPDP/GDPR erasure cascade designed.</strong> Per-subject delete that cascades through markdown, embeddings, FTS, and audit log. <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md" class="text-emerald-400 underline-offset-2 hover:underline">Read the spec →</a></span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">Audit trail.</strong> Every write/read/search recorded in JSONL with SHA-256-hashed query content (no raw queries persisted).</span></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="border-t border-slate-800/60">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-slate-500">
+        <div>vault-mem — MIT · <a href="https://github.com/frozo-ai/frozo-vault-mem" class="hover:text-slate-300">github.com/frozo-ai/frozo-vault-mem</a></div>
+        <div class="flex gap-4">
+          <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/SECURITY.md" class="hover:text-slate-300">Security</a>
+          <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/CONTRIBUTING.md" class="hover:text-slate-300">Contributing</a>
+          <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/CHANGELOG.md" class="hover:text-slate-300">Changelog</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
