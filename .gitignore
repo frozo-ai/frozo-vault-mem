@@ -22,3 +22,4 @@ Thumbs.db
 packages/*/dist/
 *.tsbuildinfo
 __pycache__/
+.gstack/

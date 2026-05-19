@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#ffffff" fill-opacity="0.04"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Notebook glyph -->
+  <g transform="translate(80,140)" fill="none" stroke="url(#accent)" stroke-width="6" stroke-linecap="round">
+    <rect x="0" y="0" width="180" height="240" rx="14"/>
+    <line x1="30" y1="50"  x2="150" y2="50"/>
+    <line x1="30" y1="100" x2="150" y2="100"/>
+    <line x1="30" y1="150" x2="110" y2="150"/>
+    <line x1="0"  y1="60"  x2="-20" y2="60"  stroke="#475569"/>
+    <line x1="0"  y1="120" x2="-20" y2="120" stroke="#475569"/>
+    <line x1="0"  y1="180" x2="-20" y2="180" stroke="#475569"/>
+  </g>
+
+  <!-- Wordmark + tagline -->
+  <g font-family="ui-sans-serif, system-ui, -apple-system, Inter, Helvetica, Arial, sans-serif" fill="#f8fafc">
+    <text x="320" y="220" font-size="84" font-weight="700" letter-spacing="-2">vault-mem</text>
+    <text x="320" y="280" font-size="32" fill="#cbd5e1" font-weight="400">
+      Local-first shared memory for AI agents.
+    </text>
+    <text x="320" y="328" font-size="32" fill="#cbd5e1" font-weight="400">
+      One markdown vault. Multiple agents. Zero cloud.
+    </text>
+  </g>
+
+  <!-- Feature row -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#34d399">
+    <text x="320" y="430">memory_write</text>
+    <text x="520" y="430">memory_search</text>
+    <text x="740" y="430">memory_context</text>
+    <text x="960" y="430">export-skill</text>
+  </g>
+
+  <!-- Tags -->
+  <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" fill="#94a3b8">
+    <text x="320" y="510">MIT</text>
+    <text x="380" y="510">·</text>
+    <text x="400" y="510">MCP-native</text>
+    <text x="540" y="510">·</text>
+    <text x="560" y="510">DPDP-ready</text>
+    <text x="700" y="510">·</text>
+    <text x="720" y="510">No telemetry</text>
+  </g>
+
+  <!-- URL -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#475569">
+    <text x="320" y="570">github.com/frozo-ai/frozo-vault-mem</text>
+  </g>
+</svg>
