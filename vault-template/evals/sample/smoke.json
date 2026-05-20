@@ -2,14 +2,86 @@
   "schema": "vault-mem-eval-set/1",
   "project": "sample",
   "name": "smoke",
-  "created": "2026-05-14T00:00:00Z",
-  "description": "Tiny demo gold set so users see the file shape. Replace with real questions for your own projects.",
+  "created": "2026-05-20T00:00:00Z",
+  "description": "Starter gold set covering all 7 memory buckets and the main retrieval patterns. Twelve questions — enough to verify the eval harness works end-to-end. Replace with your own >=50-question set per project before running CI gates.",
   "questions": [
     {
-      "id": "q1",
-      "question": "What MCP tools does vault-mem expose?",
-      "expected_citations": ["mem_2026-04-27_a8f3c0"],
-      "notes": "Should retrieve the foundational decision about the 5 MCP tools. Replace the id with a real one from your vault."
+      "id": "q01_decision_lookup",
+      "question": "Why did we choose Postgres over Pinecone for vector search?",
+      "expected_citations": ["mem_2026-05-12_decision_postgres"],
+      "notes": "Single-decision lookup. Should retrieve the canonical decision memory."
+    },
+    {
+      "id": "q02_decision_with_alternatives",
+      "question": "What alternatives did we consider for vector search and why did we reject them?",
+      "expected_citations": ["mem_2026-05-12_decision_postgres"],
+      "notes": "Tests that decision memories' rejected-alternatives text is searchable, not just the chosen path."
+    },
+    {
+      "id": "q03_observation_recent",
+      "question": "What did the pricing A/B test on the landing page reveal?",
+      "expected_citations": ["mem_2026-05-13_observation_demo_drop"],
+      "notes": "Observation lookup. Recent - should rank high on recency."
+    },
+    {
+      "id": "q04_learning_pattern",
+      "question": "What logging fields should every 5xx error path capture?",
+      "expected_citations": ["mem_2026-05-14_learning_silent_5xx"],
+      "notes": "Tests learning-bucket retrieval. Question phrased in present-tense to verify search isn't over-anchored on past-tense recall verbs."
+    },
+    {
+      "id": "q05_todo_open",
+      "question": "What needs to happen before we onboard the Mumbai design partner?",
+      "expected_citations": ["mem_2026-05-15_todo_pii_redaction"],
+      "notes": "Open todo lookup. Should NOT return completed todos (status filter)."
+    },
+    {
+      "id": "q06_question_unresolved",
+      "question": "Have we decided whether to ship a self-host installer in v1?",
+      "expected_citations": ["mem_2026-05-16_question_self_host_demand"],
+      "notes": "Question-bucket retrieval. Expected answer: 'no, still unresolved' - tests that question memories are returned with their resolution status."
+    },
+    {
+      "id": "q07_entity_vendor",
+      "question": "Who is our primary LLM vendor and what's their privacy posture?",
+      "expected_citations": ["mem_2026-05-18_entity_anthropic"],
+      "notes": "Entity lookup. Tests entity-bucket retrieval and that compliance metadata surfaces."
+    },
+    {
+      "id": "q08_summary_phase",
+      "question": "Where are we on the DPDP / GDPR erasure cascade work?",
+      "expected_citations": ["mem_2026-05-19_summary_dpdp_phase"],
+      "notes": "Summary-bucket retrieval. These are keeper-generated; the harness verifies that summaries don't get over-decayed by their lower individual confidence."
+    },
+    {
+      "id": "q09_multi_bucket_yc",
+      "question": "What's the YC application strategy and what's blocking it?",
+      "expected_citations": [
+        "mem_2026-05-17_decision_yc_apply",
+        "mem_2026-05-15_todo_pii_redaction"
+      ],
+      "notes": "Multi-memory query. Tests that the bundle returns both the decision (strategy) and the gating todo (blocker), not just one."
+    },
+    {
+      "id": "q10_recency_bias",
+      "question": "What were the most important things decided this week?",
+      "expected_citations": [
+        "mem_2026-05-12_decision_postgres",
+        "mem_2026-05-17_decision_yc_apply"
+      ],
+      "notes": "Recency + bucket-filter query. 'this week' is relative - the harness can either pin the eval date or treat it as a heuristic."
+    },
+    {
+      "id": "q11_negative_noise",
+      "question": "What did Bob say in #random yesterday?",
+      "expected_citations": [],
+      "notes": "Negative test. Chat banter shouldn't be in the vault. Expected: empty citation set. F1 here only counts precision (no false retrievals)."
+    },
+    {
+      "id": "q12_negative_out_of_scope",
+      "question": "What's our quarterly revenue?",
+      "expected_citations": [],
+      "notes": "Negative test. We don't ingest financial systems. Expected: empty citation set. Validates that the bundle doesn't hallucinate."
     }
   ]
 }

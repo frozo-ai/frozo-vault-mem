@@ -1,0 +1,60 @@
+{
+  "schema": "vault-mem-eval-set/1",
+  "project": "sample",
+  "name": "regression",
+  "created": "2026-05-20T00:00:00Z",
+  "description": "Regression suite for the trickier retrieval patterns - supersede, contradiction handling, time-decay, and cross-bucket linking. Run alongside smoke.json. The smoke set verifies retrieval works; this set verifies retrieval handles edge cases the keeper introduces over time.",
+  "questions": [
+    {
+      "id": "r01_superseded_skip",
+      "question": "What's the current state of our vector-search infrastructure?",
+      "expected_citations": ["mem_2026-05-12_decision_postgres"],
+      "notes": "Tests that an older superseded decision (if any) is correctly skipped and only the current canonical decision is returned. If a 'we chose Pinecone' memory existed and was later superseded by the Postgres decision, only the Postgres one should surface."
+    },
+    {
+      "id": "r02_contradiction_both_returned",
+      "question": "What did the keeper flag as contradictory about our database direction?",
+      "expected_citations": ["mem_2026-05-19_summary_dpdp_phase"],
+      "notes": "When contradiction detection flags two memories as conflicting, the bundle should surface BOTH so the human can resolve. This is a structural test - confirms the contradiction-pair retrieval path."
+    },
+    {
+      "id": "r03_old_decision_still_relevant",
+      "question": "What's our durable position on vector search vendors?",
+      "expected_citations": ["mem_2026-05-12_decision_postgres"],
+      "notes": "Decision memories shouldn't decay - they're permanent until superseded. Tests that an old decision still ranks high when explicitly queried, even if no recent reinforcement."
+    },
+    {
+      "id": "r04_old_observation_decayed",
+      "question": "What random benchmark numbers have we seen recently?",
+      "expected_citations": [],
+      "notes": "Observations decay 90d. After decay, an old observation shouldn't be returned for a vague query. (Pin the eval date forward to 2026-09-01 to test the decay window.)"
+    },
+    {
+      "id": "r05_summary_subsumes_observations",
+      "question": "Give me the latest update on DPDP compliance work.",
+      "expected_citations": ["mem_2026-05-19_summary_dpdp_phase"],
+      "notes": "When a summary exists that subsumes N observation memories, the bundle should prefer the summary (token-efficient) over the underlying observations. Tests summary preference in the bundle ranking."
+    },
+    {
+      "id": "r06_entity_link_traversal",
+      "question": "Which decisions did our LLM vendor's pricing influence?",
+      "expected_citations": [
+        "mem_2026-05-12_decision_postgres",
+        "mem_2026-05-18_entity_anthropic"
+      ],
+      "notes": "Cross-bucket linking - decisions linked to an entity memory should surface together. Tests the entity-graph traversal feature (P1 in PRD)."
+    },
+    {
+      "id": "r07_tag_filter",
+      "question": "What memories are tagged 'p0' or 'security'?",
+      "expected_citations": ["mem_2026-05-15_todo_pii_redaction"],
+      "notes": "Tag-filter query. Tests that hybrid search ranks tag-matches alongside FTS+semantic, and that the keeper-applied tags are searchable."
+    },
+    {
+      "id": "r08_long_body_truncation",
+      "question": "Walk me through the full DPDP erasure cascade implementation.",
+      "expected_citations": ["mem_2026-05-19_summary_dpdp_phase"],
+      "notes": "Tests that long-body memories aren't truncated below their natural breaking points when returned in a bundle. The keeper chunks long bodies; this verifies chunk reassembly."
+    }
+  ]
+}
