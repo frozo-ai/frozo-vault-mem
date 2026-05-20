@@ -52,6 +52,20 @@
           <a href="https://github.com/frozo-ai/frozo-vault-mem" class="rounded border border-slate-700 px-4 py-2 text-slate-200 hover:border-slate-500">Star on GitHub</a>
           <code class="rounded bg-slate-900/60 px-3 py-2 font-mono text-sm text-slate-300">git clone github.com/frozo-ai/frozo-vault-mem</code>
         </div>
+
+        <!-- Social proof strip -->
+        <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
+          <a href="https://github.com/frozo-ai/frozo-vault-mem/stargazers" class="inline-flex items-center gap-2 hover:text-slate-300">
+            <img alt="GitHub stars" src="https://img.shields.io/github/stars/frozo-ai/frozo-vault-mem?style=flat&color=10b981&labelColor=020617&logo=github&logoColor=cbd5e1" />
+          </a>
+          <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/LICENSE" class="inline-flex items-center gap-2 hover:text-slate-300">
+            <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-10b981?labelColor=020617" />
+          </a>
+          <span class="hidden sm:inline">·</span>
+          <span>Public OSS since 2026-04-28</span>
+          <span class="hidden sm:inline">·</span>
+          <span>Dogfooded daily by the team that built it (~10 memories/day)</span>
+        </div>
       </section>
 
       <!-- Why -->
@@ -62,6 +76,75 @@
         </p>
         <p class="mt-4 max-w-2xl text-slate-400">
           Today your "memory" is conversation histories you can't search, project context copy-pasted into every new session, and Notion docs you forgot to update. vault-mem fixes this with <em class="text-slate-200 not-italic">one shared markdown vault</em> all your agents read from and write to.
+        </p>
+      </section>
+
+      <!-- 60-second tour -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">See it in action</h2>
+        <p class="mt-3 max-w-3xl text-xl font-medium tracking-tight">
+          A 60-second tour: one agent writes a decision; another agent recalls it three days later.
+        </p>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+          <!-- Step 1 -->
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">① Monday</div>
+            <p class="mt-2 text-sm text-slate-300">Claude Code in your terminal writes a memory while you discuss architecture.</p>
+<pre class="mt-3 rounded bg-slate-950 p-3 font-mono text-[11px] leading-relaxed text-slate-200 overflow-x-auto"><code>memory_write({
+  type: "decision",
+  fields: {
+    title: "Use Postgres for users",
+    project: "myapp",
+    confidence: 0.9,
+  },
+  content: "Picked Postgres over Mongo —
+  RLS lets us avoid an auth-service tier
+  for v1. Revisit at &gt; 1M rows."
+})
+
+→ mem_2026-05-20_a8f3c0
+  saved to ~/vault-mem/inbox/decisions/</code></pre>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">② Tuesday (background)</div>
+            <p class="mt-2 text-sm text-slate-300">The keeper daemon promotes the inbox memory to canonical, links semantic neighbors, indexes for hybrid search.</p>
+<pre class="mt-3 rounded bg-slate-950 p-3 font-mono text-[11px] leading-relaxed text-slate-200 overflow-x-auto"><code>keeper run --vault ~/vault-mem
+
+  triage  : promoted 1
+  link    : 3 rows across 1 memory
+  decay   : decayed 0
+  archive : archived 0
+  total   : 487 ms
+
+mem_2026-05-20_a8f3c0
+  inbox/ → memory/decisions/</code></pre>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="rounded-lg border border-slate-800/60 bg-slate-900/30 p-5">
+            <div class="font-mono text-xs uppercase tracking-widest text-emerald-400">③ Thursday</div>
+            <p class="mt-2 text-sm text-slate-300">Cursor (different tool, same vault) asks the question. The original decision surfaces with full context.</p>
+<pre class="mt-3 rounded bg-slate-950 p-3 font-mono text-[11px] leading-relaxed text-slate-200 overflow-x-auto"><code>memory_search(
+  "which database did we
+   pick for myapp"
+)
+
+→ [{
+    id: "mem_2026-05-20_a8f3c0",
+    title: "Use Postgres for users",
+    snippet: "Picked Postgres over
+    Mongo — RLS lets us avoid…",
+    confidence: 0.9
+  }]</code></pre>
+          </div>
+        </div>
+
+        <p class="mt-6 text-sm text-slate-500">
+          Same vault file. Different agents. No copy-paste. The whole round-trip
+          happens locally — your text never leaves your machine.
         </p>
       </section>
 
@@ -177,6 +260,53 @@ launchctl load -w ~/Library/LaunchAgents/com.vaultmem.keeper.plist</code></pre>
           <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">DPDP/GDPR erasure cascade designed.</strong> Per-subject delete that cascades through markdown, embeddings, FTS, and audit log. <a href="https://github.com/frozo-ai/frozo-vault-mem/blob/main/docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md" class="text-emerald-400 underline-offset-2 hover:underline">Read the spec →</a></span></li>
           <li class="flex gap-3"><span class="text-emerald-400">·</span><span><strong class="text-white">Audit trail.</strong> Every write/read/search recorded in JSONL with SHA-256-hashed query content (no raw queries persisted).</span></li>
         </ul>
+      </section>
+
+      <!-- Cloud teaser -->
+      <section class="border-t border-slate-800/60 py-16">
+        <h2 class="text-sm font-mono uppercase tracking-widest text-slate-500">Self-host vs cloud</h2>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <!-- OSS column -->
+          <div class="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">vault-mem (OSS)</h3>
+              <span class="rounded bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300">Free · MIT</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-400">This repo. Runs on your laptop. Today.</p>
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> All 5 MCP tools + hybrid search</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Skills-file export (Claude / Cursor / Windsurf / generic)</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Keeper daemon (triage, link, decay, contradict, summarize)</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> DPDP/GDPR erasure cascade CLI</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Eval harness</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Local embeddings, no API keys required</li>
+            </ul>
+            <a href="#install" class="mt-6 inline-block rounded bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400">Install in 4 commands →</a>
+          </div>
+
+          <!-- Cloud column -->
+          <div class="rounded-lg border border-slate-700 bg-slate-900/30 p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">Vault Cloud</h3>
+              <span class="rounded border border-slate-600 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">In development</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-400">Hosted multi-tenant for teams. Beta opens after the 2026-08-30 public OSS announce.</p>
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-slate-500">+</span> Everything in OSS, plus:</li>
+              <li class="flex gap-2"><span class="text-emerald-400">·</span> Web UI for review + search</li>
+              <li class="flex gap-2"><span class="text-emerald-400">·</span> Slack, GitHub, Linear, Notion, meeting connectors</li>
+              <li class="flex gap-2"><span class="text-emerald-400">·</span> Generic webhook receiver (HMAC-signed, opt-in replay protection)</li>
+              <li class="flex gap-2"><span class="text-emerald-400">·</span> Admin tools: per-subject erasure UI, hashed audit log dashboard</li>
+              <li class="flex gap-2"><span class="text-emerald-400">·</span> Multi-tenant Postgres + RLS, SSO, team workspaces</li>
+            </ul>
+            <a href="https://github.com/frozo-ai/frozo-vault-mem/subscription" class="mt-6 inline-block rounded border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:border-slate-400">Watch the repo for beta →</a>
+          </div>
+        </div>
+
+        <p class="mt-6 text-sm text-slate-500 max-w-3xl">
+          <strong class="text-slate-300">Self-host parity is a design constraint.</strong> OSS never gets crippled — Cloud sells convenience (hosting, connectors, web UI, team scale), not core features. Pricing TBD before beta. India tier (₹) and USD primary tier both planned.
+        </p>
       </section>
     </main>
 
