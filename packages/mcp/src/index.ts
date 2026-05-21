@@ -9,6 +9,7 @@ import { runTailAudit } from "./cli/tail-audit.js";
 import { runExportSkill } from "./cli/export-skill.js";
 import { runEvalCli } from "./cli/eval.js";
 import { runSupersedeCli } from "./cli/supersede.js";
+import { runGraphCli } from "./cli/graph.js";
 import { resolveVaultPath } from "./vault/paths.js";
 import { createLogger } from "./log.js";
 
@@ -155,6 +156,41 @@ async function main(argv: string[]): Promise<void> {
         console.log(`  loser moved: ${r.loserFrom}`);
         console.log(`            →: ${r.loserTo}`);
         console.log(`  winner.supersedes count: ${r.supersedesCount}`);
+      }
+    });
+
+  program
+    .command("graph <root_id>")
+    .description("Return the neighborhood subgraph around a memory (supersedes + contradicts edges)")
+    .option("--vault <path>", "Vault root", undefined)
+    .option("--depth <n>", "BFS depth (1-3, default 1)")
+    .option("--max-nodes <n>", "Node cap (1-200, default 50)")
+    .option("--json", "Emit raw JSON (default: human summary)")
+    .action(async (rootId: string, opts: { vault?: string; depth?: string; maxNodes?: string; json?: boolean }) => {
+      const vault = resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH });
+      const out = await runGraphCli({
+        vault,
+        rootId,
+        ...(opts.depth !== undefined && { depth: parseInt(opts.depth, 10) }),
+        ...(opts.maxNodes !== undefined && { maxNodes: parseInt(opts.maxNodes, 10) }),
+      });
+      if (opts.json) {
+        console.log(JSON.stringify(out, null, 2));
+        return;
+      }
+      console.log(`root: ${out.root}`);
+      console.log(`depth=${out.depth} max_nodes=${out.max_nodes} truncated=${out.truncated}`);
+      console.log(`nodes: ${out.nodes.length}, edges: ${out.edges.length}`);
+      console.log("");
+      for (const n of out.nodes) {
+        const proj = n.project ? ` [${n.project}]` : "";
+        console.log(`  ${n.id}  ${n.type}${proj}  ${n.title}`);
+      }
+      if (out.edges.length > 0) {
+        console.log("");
+        for (const e of out.edges) {
+          console.log(`  ${e.from} --${e.kind}--> ${e.to}`);
+        }
       }
     });
 

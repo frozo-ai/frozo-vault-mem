@@ -22,6 +22,7 @@ import {
 } from "../tools/index.js";
 import { createSupersedeTool, type SupersedeToolInput } from "../tools/supersede.js";
 import { createEraseSubjectTool, type EraseSubjectToolInput } from "../tools/erase-subject.js";
+import { createGraphTool, type GraphToolInput } from "../tools/graph.js";
 import type { WriteToolInput } from "../tools/write.js";
 import type { ReadToolInput } from "../tools/read.js";
 import type { PromoteToolInput } from "../tools/promote.js";
@@ -195,6 +196,25 @@ const TOOL_DEFS = [
       },
     },
   },
+  {
+    name: "memory_graph",
+    description:
+      "Return the neighborhood subgraph around a memory, walking explicit edges from frontmatter " +
+      "(`supersedes` and `contradicts`). USE THIS when the user asks 'what does X depend on', " +
+      "'what replaced X', 'how is X connected to Y', or wants to see the lineage / conflict-set " +
+      "around a decision or entity. BFS from `root_id` up to `depth` hops (default 1, max 3), " +
+      "capped at `max_nodes` nodes (default 50, max 200). Returns `{root, nodes, edges, truncated, " +
+      "depth, max_nodes}` JSON suitable for D3 / Mermaid client-side rendering. Read-only; no audit entry.",
+    inputSchema: {
+      type: "object",
+      required: ["root_id"],
+      properties: {
+        root_id: { type: "string", description: "Memory id to start the walk from (e.g. mem_2026-05-11_4ecdb6)." },
+        depth: { type: "integer", minimum: 1, maximum: 3, description: "BFS depth from root (default 1, max 3)." },
+        max_nodes: { type: "integer", minimum: 1, maximum: 200, description: "Hard cap on node count (default 50, max 200)." },
+      },
+    },
+  },
 ] as const;
 
 export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
@@ -283,6 +303,11 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
     session,
   });
 
+  const graphTool = createGraphTool({
+    vault: opts.vault,
+    index,
+  });
+
   const server = new Server(
     { name: "vault-mem-mcp", version: "0.1.0" },
     { capabilities: { tools: {} } },
@@ -318,6 +343,9 @@ export async function buildServer(opts: BuildServerOpts): Promise<BuiltServer> {
           break;
         case "memory_erase_subject":
           out = await eraseSubjectTool.handle(a as unknown as EraseSubjectToolInput);
+          break;
+        case "memory_graph":
+          out = await graphTool.handle(a as unknown as GraphToolInput);
           break;
         default:
           throw new ToolError("internal_error", `Unknown tool: ${name}`);

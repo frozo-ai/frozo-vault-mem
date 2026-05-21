@@ -43,11 +43,13 @@ Vault-mem is a **two-product play**:
 - YC S26 application close: **2026-09-30**
 
 **What's actually open in this repo (OSS):**
-1. **DPDP/GDPR per-subject erasure cascade** (Risk #6, High severity). **Design landed** at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md` (all 6 open questions resolved 2026-05-19). Implementation pending: ~3.5 weeks across 5 phases (subject-index foundation → cascade → gating → Cloud parity → docs). Owed before public Vault Cloud launch.
-2. **Open Q #2** (PRD §10): should the keeper auto-classify writes into buckets, or only humans/agents? Phase 5 shipped without resolving this — current behaviour is humans/agents only. Decision pending.
-3. **Open Q #4** (PRD §10): pricing currency (USD vs ₹) for India tier. Founder call.
-4. **Landing page** for `vault-mem.dev` (or chosen domain) — confirm exists / verify status.
-5. **Eval gold-set content**: 3 design-partner Q&A sets seeded into `vault-template/evals/` — verify each has the PRD-required ≥50 questions.
+1. **Open Q #2** (PRD §10): should the keeper auto-classify writes into buckets, or only humans/agents? Phase 5 shipped without resolving this — current behaviour is humans/agents only. Decision pending.
+2. **Open Q #4** (PRD §10): pricing currency (USD vs ₹) for India tier. Founder call.
+3. **Landing page** for `vault-mem.dev` (or chosen domain) — confirm exists / verify status.
+4. **Eval gold-set content**: 3 design-partner Q&A sets seeded into `vault-template/evals/` — verify each has the PRD-required ≥50 questions.
+**Recently closed (2026-05-19 / 2026-05-21):**
+- **DPDP/GDPR per-subject erasure cascade** (Risk #6) — ✅ all 5 phases shipped. OSS Phases 1–3 + 5 in this repo (commits `71febcc` → `3e3391f`), Cloud parity Phase 4 in `vault-cloud` (8 migrations `20260521044642…044917`, RPC + RLS + `/admin/subjects` UI). Tests: 161 TS + 160 keeper green. Verified live on prod Supabase 2026-05-21.
+- **Entity-graph projection** (PRD §6 P1) — ✅ OSS `memory_graph` MCP tool + CLI in this repo (`packages/mcp/src/tools/graph.ts`, 11 new tests, total 172 TS green). Cloud `memory_graph_neighborhood(text, int, int) → jsonb` SECURITY DEFINER RPC in `vault-cloud` migration `20260521050000_memory_graph` (also adds missing `contradicts text[]` column to `public.memories` — schema parity gap with OSS). 7/7 SQL tests pass on prod (`qvxxowytqpifshcojlqi`). Edge model: explicit only (`supersedes` directed + `contradicts` symmetric); deferred edge kinds (co-tag, subject-mention, body-match) parked for v2. Spec at `docs/superpowers/specs/2026-05-21-memory-graph-design.md`.
 
 **What's open in `vault-cloud` (not this repo, but adjacent):**
 - Browser-triggered connector sync (currently CLI-only — every sync needs a terminal).
@@ -145,7 +147,7 @@ These choices are deliberate — don't substitute without a reason:
 - **Backup:** daily `git push` to `frozo-ai/frozo-vault-mem` (public); weekly full backup of `~/vault-mem/` to external drive.
 - **Privacy:** zero hard cloud dependency for self-host (DPDP compliance). Cloud product has its own privacy posture and lives in `vault-cloud`.
 - **Telemetry:** **opt-in only** for the OSS (PRD §10 Open Q #8, decided 2026-05-13). Shipped with zero telemetry by default. Opt-in flag documented in README.
-- **DPDP/GDPR per-subject erasure** (Risk #6, High severity): **still open**. Must cascade through `.md` files → embeddings → FTS → audit. Design + ship before public Vault Cloud launch.
+- **DPDP/GDPR per-subject erasure** (Risk #6, High severity): ✅ **shipped 2026-05-19 to 2026-05-21**. Cascade through `.md` files → embeddings (Lance) → FTS → audit log, with hashed `subject_id_hash` in audit entries and controller-private `_system/erasure_requests.jsonl` for plaintext. Cloud parity via `erase_subject(uuid, text, text)` SECURITY DEFINER RPC with 10/hr rate limit per admin and RLS. `memory_erase_subject` MCP tool is queue-as-gatekeeper (writes proposal, never auto-applies).
 
 ## Running and developing
 
@@ -192,7 +194,7 @@ These choices are deliberate — don't substitute without a reason:
 | 3 | Brand name: keep "vault-mem" or rename before public launch? | ✅ resolved | Kept "vault-mem"; landed at `frozo-ai/frozo-vault-mem` (org-scoped vs personal). |
 | 4 | Pricing currency: USD primary or ₹ primary for India tier? | ⏳ open | Founder call, pre-launch. |
 | 5 | Exporter targets: Claude/Cursor/Windsurf only, or also OpenAI/generic? | ✅ resolved | Shipped all four: `claude`, `cursor`, `windsurf`, `generic`. |
-| 6 | DPDP/GDPR erasure cascade design (Risk #6) | 🟡 design resolved | Spec at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md`. Implementation still pending (~3.5w). |
+| 6 | DPDP/GDPR erasure cascade design (Risk #6) | ✅ resolved + shipped | Spec at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md`. All 5 phases shipped (OSS Phases 1–3 + 5 in this repo, Cloud Phase 4 in `vault-cloud`). 161 TS + 160 keeper tests green; 8 Cloud migrations applied to prod. |
 | 7 | (covered in CLAUDE.md — vault-mem as lead bet) | ✅ resolved | Decided 2026-05-13. |
 | 8 | Telemetry default — opt-in vs opt-out for OSS | ✅ resolved | Opt-in only, zero telemetry by default. |
 

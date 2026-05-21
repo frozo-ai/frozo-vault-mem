@@ -18,7 +18,11 @@ export type ErrorKind =
   // erase-subject tool
   | "invalid_subject_id"
   | "missing_reason"
-  | "erase_request_failed";
+  | "erase_request_failed"
+  // graph tool
+  | "entity_not_found"
+  | "depth_out_of_range"
+  | "max_nodes_out_of_range";
 
 export class ToolError extends Error {
   constructor(
