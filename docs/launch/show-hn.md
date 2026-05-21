@@ -31,9 +31,10 @@ write to. Built it for myself, used it solo for a few weeks, now public.
 
 **What it is**
 
-- 5 MCP tools (`memory_write` / `memory_read` / `memory_search` /
-  `memory_promote` / `memory_context`) usable from Claude Code, Claude
-  Desktop, Cursor, or any MCP client.
+- 8 MCP tools (`memory_write` / `memory_read` / `memory_search` /
+  `memory_promote` / `memory_context` / `memory_supersede` /
+  `memory_erase_subject` / `memory_graph`) usable from Claude Code,
+  Claude Desktop, Cursor, or any MCP client.
 - Storage is plain `.md` files at `~/vault-mem/`. Open them in Obsidian.
   Commit them to git. If every AI company shut down tomorrow, my knowledge
   survives.
@@ -76,7 +77,7 @@ node packages/mcp/bin/vault-mem-mcp init
 Then `claude mcp add … vault-mem` to wire it into Claude Code.
 
 Repo: <https://github.com/frozo-ai/frozo-vault-mem>
-MIT licensed. 122 TypeScript tests + 114 Python tests passing.
+MIT licensed. 172 TypeScript tests + 160 Python tests passing.
 
 Happy to answer questions. Particularly curious whether the "typed
 ontology beats one blob" intuition holds up for other people too.

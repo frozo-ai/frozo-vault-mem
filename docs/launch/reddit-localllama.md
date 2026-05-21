@@ -89,7 +89,7 @@ sub-ms SQLite query.
 
 **Tested**
 
-- 122 TypeScript tests + 114 Python tests. All pass.
+- 172 TypeScript tests + 160 Python tests. All pass.
 - Runs on macOS (used daily). Linux should work; the launchd plist is
   macOS-specific (Linux systemd unit file is a welcome PR). Windows
   untested.

@@ -190,9 +190,9 @@ These choices are deliberate — don't substitute without a reason:
 | # | Question | Status | Notes |
 |---|---|---|---|
 | 1 | Embedding model: Voyage `voyage-3` vs OpenAI `text-embedding-3-small` as Cloud default | ⏳ open | Per-org override decided. Default still TBD before Cloud beta. |
-| 2 | Keeper auto-classify writes into buckets, or only humans/agents? | ⏳ open | Phase 5 shipped without resolving; current behaviour is humans/agents only. |
+| 2 | Keeper auto-classify writes into buckets, or only humans/agents? | ✅ resolved 2026-05-21 | Humans/agents-only confirmed. Connectors that don't know the bucket default to `observation`. Mem: `mem_2026-05-21_3656dd`. |
 | 3 | Brand name: keep "vault-mem" or rename before public launch? | ✅ resolved | Kept "vault-mem"; landed at `frozo-ai/frozo-vault-mem` (org-scoped vs personal). |
-| 4 | Pricing currency: USD primary or ₹ primary for India tier? | ⏳ open | Founder call, pre-launch. |
+| 4 | Pricing currency: USD primary or ₹ primary for India tier? | ✅ resolved 2026-05-21 | USD primary, `(≈ ₹999/seat)` shown alongside for India IPs. Dodo handles INR/UPI checkout independent of display. Mem: `mem_2026-05-21_cd472b`. |
 | 5 | Exporter targets: Claude/Cursor/Windsurf only, or also OpenAI/generic? | ✅ resolved | Shipped all four: `claude`, `cursor`, `windsurf`, `generic`. |
 | 6 | DPDP/GDPR erasure cascade design (Risk #6) | ✅ resolved + shipped | Spec at `docs/superpowers/specs/2026-05-19-dpdp-erasure-cascade-design.md`. All 5 phases shipped (OSS Phases 1–3 + 5 in this repo, Cloud Phase 4 in `vault-cloud`). 161 TS + 160 keeper tests green; 8 Cloud migrations applied to prod. |
 | 7 | (covered in CLAUDE.md — vault-mem as lead bet) | ✅ resolved | Decided 2026-05-13. |

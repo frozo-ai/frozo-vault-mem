@@ -99,7 +99,7 @@ parallel and tired of the memory silos.
 Used it solo for a few weeks. Phases 0–5 shipped including the skill
 exporter.
 
-122 TS tests + 114 Python tests passing. MIT.
+172 TS tests + 160 Python tests passing. MIT.
 
 ---
 
