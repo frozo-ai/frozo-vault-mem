@@ -24,3 +24,15 @@ packages/*/dist/
 __pycache__/
 .gstack/
 .claude/
+
+# YC demo working assets (raw recordings, intermediate cuts, generated VO)
+cerebro-yc-demo/
+
+# Cerebro launch / sales / outreach artifacts — kept in vault-cloud (proprietary).
+# Allowlist the OSS-launch-relevant drafts that were already public before this rule.
+docs/launch/*
+!docs/launch/README.md
+!docs/launch/privacy-by-design.md
+!docs/launch/show-hn.md
+!docs/launch/reddit-localllama.md
+!docs/launch/twitter-thread.md

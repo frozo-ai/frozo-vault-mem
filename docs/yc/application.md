@@ -233,6 +233,9 @@ Cerebro is the only one big enough.
       design partners onboarded
 - [ ] Add 1-2 named customer logos if any closed by Aug
 - [ ] 1-min demo video uploaded + linked
+      (draft locked at `cerebro-yc-demo/cerebro-yc-demo-final-v3-1080p.mp4`,
+      1920×1080 · 13MB · 63s · MiniMax-cloned founder VO + burned-in captions;
+      upload to https://x.com/ashishdhiman23/status/2058889731648471448 then paste here)
 - [ ] Verify all GitHub / website / blog links resolve
 - [ ] Co-founder section (if applicable; currently solo)
 - [ ] Anti-cliché pass: kill anything that sounds like every other YC app

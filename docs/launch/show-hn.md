@@ -90,6 +90,10 @@ ontology beats one blob" intuition holds up for other people too.
 - Don't argue with the "this is just SQLite" comment — say "fair, and
   here's why MCP-level access still matters."
 - If someone asks about cross-org / team use: be upfront that Vault Cloud
-  (commercial) is in development; the OSS half is feature-complete for
-  single-user.
-- Don't link to commercial offerings in the post (HN frowns on it).
+  (commercial, branded **Cerebro**) is in development; the OSS half is
+  feature-complete for single-user. You can share the 1-min Cerebro demo
+  in replies: https://x.com/ashishdhiman23/status/2058889731648471448 — shows the cross-agent shared-memory moment
+  (Claude Code asks → Cursor returns same memory ID) plus the connector
+  pitch (Slack/GitHub/Linear → company brain).
+- Don't link to commercial offerings in the post body (HN frowns on it).
+  The demo URL belongs in replies only, in response to a real question.

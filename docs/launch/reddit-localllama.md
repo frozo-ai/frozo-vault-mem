@@ -102,6 +102,8 @@ If anyone's been wanting "agent-shareable memory but local-only", give it
 a spin and let me know what breaks. Especially curious about non-macOS
 issues since I haven't tested broadly.
 
+**Quick 1-min demo (the team-use version on top of this):** https://x.com/ashishdhiman23/status/2058889731648471448
+
 ---
 
 ## Things to remember post-submit

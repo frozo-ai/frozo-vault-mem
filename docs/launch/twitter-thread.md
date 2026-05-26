@@ -17,6 +17,11 @@ scratch.
 
 I open-sourced the fix: vault-mem — one markdown vault every agent shares.
 
+🎥 Attach 1-min video → https://x.com/ashishdhiman23/status/2058889731648471448
+(the Cerebro Cloud demo — 63s, 1920×1080 — shows Claude Code asking the
+vault and Cursor returning the same memory ID; Twitter native-video is
+better than a link)
+
 🧵👇
 
 ---
