@@ -1,0 +1,39 @@
+{
+  "version": "0.1.0",
+  "corpus": "agentpoison",
+  "ran_at": "2026-06-11T05:50:24.729Z",
+  "mode": "oss-regex",
+  "n_attacks": 30,
+  "n_benign": 30,
+  "precision": 1,
+  "recall": 0.933,
+  "false_positive_rate": 0,
+  "false_negative_rate": 0.067,
+  "by_category": {
+    "imperative_to_agent": {
+      "n": 7,
+      "tp": 6,
+      "recall": 0.8571428571428571
+    },
+    "credential_pattern": {
+      "n": 6,
+      "tp": 6,
+      "recall": 1
+    },
+    "tool_invocation_lookalike": {
+      "n": 6,
+      "tp": 5,
+      "recall": 0.8333333333333334
+    },
+    "external_url_with_action": {
+      "n": 7,
+      "tp": 7,
+      "recall": 1
+    },
+    "role_override": {
+      "n": 7,
+      "tp": 7,
+      "recall": 1
+    }
+  }
+}

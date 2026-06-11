@@ -8,6 +8,7 @@ import { runReindex } from "./cli/reindex.js";
 import { runTailAudit } from "./cli/tail-audit.js";
 import { runExportSkill } from "./cli/export-skill.js";
 import { runEvalCli } from "./cli/eval.js";
+import { runDefenseCli } from "./cli/eval-defense.js";
 import { runSupersedeCli } from "./cli/supersede.js";
 import { runGraphCli } from "./cli/graph.js";
 import { resolveVaultPath } from "./vault/paths.js";
@@ -132,6 +133,28 @@ async function main(argv: string[]): Promise<void> {
         ...(opts.output !== undefined && { outputPath: opts.output }),
         minF1: parseFloat(opts.minF1),
         minPassRate: parseFloat(opts.minPassRate),
+      });
+      if (result.exitCode !== 0) process.exit(result.exitCode);
+    });
+
+  evalCmd
+    .command("defense")
+    .description("Run an adversarial defense benchmark corpus (agentpoison | minja | behavioral)")
+    .requiredOption("--corpus <name>", "Corpus name: agentpoison | minja | behavioral")
+    .option("--vault <path>", "Vault root (overrides bundled corpus with <vault>/evals/defense/)", undefined)
+    .option("--output <path>", "Write JSON report to this path")
+    .action(async (opts: { corpus: string; vault?: string; output?: string }) => {
+      if (opts.corpus !== "agentpoison" && opts.corpus !== "minja" && opts.corpus !== "behavioral") {
+        throw new Error(`--corpus must be one of: agentpoison, minja, behavioral (got ${opts.corpus})`);
+      }
+      // Vault is optional for defense — corpus lives in vault-template by default.
+      const vault = opts.vault
+        ? resolveVaultPath({ flag: opts.vault, env: process.env.VAULT_MEM_PATH })
+        : undefined;
+      const result = await runDefenseCli({
+        corpus: opts.corpus,
+        ...(vault !== undefined && { vault }),
+        ...(opts.output !== undefined && { outputPath: opts.output }),
       });
       if (result.exitCode !== 0) process.exit(result.exitCode);
     });

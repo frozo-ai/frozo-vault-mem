@@ -1,0 +1,16 @@
+{
+  "version": "0.1.0",
+  "corpus": "behavioral",
+  "agent_id": "behavioral-attacker-001",
+  "milestones": [
+    { "day": 7, "max_score": 40, "comment": "Score should have dropped below 40 by end of day 7 — adversary has 3 quarantined writes in the rolling window by then." },
+    { "day": 15, "max_score": 25, "comment": "Score should be below 25 by day 15 — sustained attack signal makes the agent ineligible for trust-aware retrieval." },
+    { "day": 30, "max_score": 20, "comment": "Score should stabilize below 20 by day 30 — long-term ban-level." }
+  ],
+  "thirty_day_targets": {
+    "quarantine_rate_min": 0.35,
+    "final_score_max": 25,
+    "detection_latency_days_max": 7
+  },
+  "notes": "Score curve is approximate — exact numbers depend on the trust v2 formula's input weights. Targets reflect the design intent of Gap 1 (trust v2)."
+}
