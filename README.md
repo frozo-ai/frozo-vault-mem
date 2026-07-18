@@ -7,6 +7,8 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-blue)](https://nodejs.org)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.12-blue)](https://www.python.org)
 
+> **Want this for your whole team?** [Cerebro](https://cerebro.frozo.ai) is the hosted, multi-tenant version — the same MCP memory tools, shared across your team's humans *and* agents, fed by Slack/GitHub connectors. This repo stays MIT and fully featured for solo / self-host use; Cloud sells convenience, integrations, and team scale.
+
 ## Why
 
 You work across multiple AI agents — Claude Code, Claude Desktop, Cursor, custom MCP clients. Each one has its own memory and forgets the others. Today your "memory" is scattered across:
@@ -24,6 +26,7 @@ You work across multiple AI agents — Claude Code, Claude Desktop, Cursor, cust
 - **A second brain you fully own.** Every memory is a `.md` file at `~/vault-mem/`. Open it in Obsidian. Commit it to git. If every AI company shut down tomorrow, your knowledge survives.
 - **Coherence without effort.** A 30-min Python daemon (`packages/keeper`) auto-promotes inbox writes, decays stale observations, archives expired memories, and links semantically-related notes.
 - **Audit trail.** Every write/read/search recorded in JSONL (`_system/audit.log`) with SHA-256-hashed query content (no raw queries persisted).
+- **Export any project's memory as a drop-in skill.** `vault-mem-mcp export-skill <project> --target=claude|cursor|windsurf` turns accumulated decisions + learnings into a `SKILL.md` bundle any agent can load — [see below](#export-your-memory-as-a-skill-bundle). No other memory tool does this.
 
 ## Quick start
 
